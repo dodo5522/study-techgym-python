@@ -89,7 +89,7 @@ def play() -> None:
       if number == 9 and inning == InningBack:
         myself_total = playing_teams.get('myself').total_score
         enemy_total = playing_teams.get('enemy').total_score
-        if myself_total > enemy_total:
+        if enemy_total > myself_total:
           score_boards[inning + 1] += ' X |'
         else:
           score = get_play_inning(inning)
