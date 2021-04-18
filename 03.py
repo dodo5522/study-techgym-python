@@ -1,11 +1,11 @@
-from typing import List
+from typing import Any
 from typing import NewType
 import random
 
 
-Inning = NewType('Inning', int)
-InningFront = Inning(0)
-InningBack = Inning(1)
+InningSide = NewType('InningSide', int)
+InningTop = InningSide(0)
+InningBottom = InningSide(1)
 
 
 class Team:
@@ -28,8 +28,8 @@ class Team:
     self.total_score += score
 
 
-teams = []
-team_info = [
+teams: list[Team] = []
+team_info: dict[str, Any] = [
   {'name': 'attackers', 'attack': 80, 'defence': 20},
   {'name': 'defenders', 'attack': 30, 'defence': 70},
   {'name': 'averages',  'attack': 50, 'defence': 50},
@@ -59,18 +59,20 @@ def choice_team(player: str) -> None:
   print('{}のチームは「{}」です'.format(playser_jp, playing_teams.get(player).name))
 
 
-def get_play_inning(inning: Inning) -> int:
+def get_play_inning(side: InningSide) -> int:
   global playing_teams
   myself = playing_teams.get('myself')
   enemy = playing_teams.get('enemy')
-  if inning == InningFront:
-    score = (myself.get_hit_rate() - enemy.get_out_rate()) // 10 
-  else:
-    score = (enemy.get_hit_rate() - myself.get_out_rate()) // 10
-  return 0 if score < 0 else score
+  teams_ = (myself, enemy) if side == InningTop else (enemy, myself)
+  diff_offence = (teams_[0].get_hit_rate() - teams_[1].get_out_rate()) // 10
+  return 0 if diff_offence < 0 else diff_offence
 
 
 def play() -> None:
+  def can_skip_inning(i: int, s: InningSide, enemy_total: int, my_total: int):
+    return i == last_inning and s == InningBottom and enemy_total > my_total
+
+  last_inning = 9
   score_boards = ['____ |', '自分 |', '相手 |']
 
   create_teams()
@@ -79,26 +81,21 @@ def play() -> None:
   choice_team('myself')
   choice_team('enemy')
 
-  for number in range(1, 10):
-    score_boards[0] += ' {} |'.format(number)
+  for inning in range(1, last_inning + 1):
+    score_boards[0] += ' {} |'.format(inning)
   score_boards[0] += ' R |'
 
-  for inning in InningFront, InningBack:
-    for number in range(1, 10):
-      player = list(playing_teams.keys())[inning]
-      if number == 9 and inning == InningBack:
-        myself_total = playing_teams.get('myself').total_score
-        enemy_total = playing_teams.get('enemy').total_score
-        if myself_total > enemy_total:
-          score_boards[inning + 1] += ' X |'
-        else:
-          score = get_play_inning(inning)
-          playing_teams[player].add_score(score)
-          score_boards[inning + 1] += ' {} |'.format(score)
+  for side in InningTop, InningBottom:
+    for inning in range(1, last_inning + 1):
+      player = list(playing_teams.keys())[side]
+      myself_total = playing_teams.get('myself').total_score
+      enemy_total = playing_teams.get('enemy').total_score
+      if can_skip_inning(inning, side, enemy_total, myself_total):
+        score_boards[side + 1] += ' X |'
       else:
-        score = get_play_inning(inning)
+        score = get_play_inning(side)
         playing_teams[player].add_score(score)
-        score_boards[inning + 1] += ' {} |'.format(score)
+        score_boards[side + 1] += ' {} |'.format(score)
 
   for i, player in enumerate(playing_teams.keys()):
       score_boards[i + 1] += ' {} |'.format(playing_teams.get(player).total_score)
