@@ -86,8 +86,12 @@ def show_table():
   def green_bar():
     return '{}|{}'.format('\033[0;32m', '\033[0m')
 
+  global players
+  title = '| _____ | {} |'.format(' | '.join([p.name for p in players])).replace('|', green_bar())
+  print(title)
   for row in table:
-    print('{}{}{}'.format(green_bar(), row, green_bar()))
+    line = '| {} | {} |'.format(row, ' | '.join(['{:02d}'.format(p.bets.get(row.name)) for p in players])).replace('|', green_bar())
+    print(line)
 
 
 def create_players():
@@ -99,6 +103,7 @@ def create_players():
 def play():
   global players
   create_players()
+  show_table()
   for p in players:
     p.info()
   for p in players:
@@ -110,5 +115,4 @@ def play():
 
 if __name__ == '__main__':
   create_table()
-  show_table()
   play()
