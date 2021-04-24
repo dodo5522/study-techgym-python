@@ -3,6 +3,21 @@ from typing import NewType
 import random
 
 
+Color = NewType('Color', [str, str])
+ColorRed = Color(['red', '\033[0;31m'])
+ColorBlack = Color(['black', '\033[0m'])
+
+
+class Cell:
+  def __init__(self, name: str, rate: int, color: Color):
+    self.name = name
+    self.rate = rate
+    self.color = color
+
+  def __str__(self):
+    return '{}{}(x{})\033[0m'.format(self.color[1], self.name, self.rate)
+
+
 class Player:
   def __init__(self, name: str, coins: int):
     Player.MIN_BET = 1
@@ -47,6 +62,28 @@ class Computer(Player):
 
 
 players: list[Player] = []
+table: list[Cell] = []
+
+
+def create_table():
+  table.append(Cell('R', 8, ColorRed))
+  table.append(Cell('B', 8, ColorBlack))
+  table.append(Cell('1', 2, ColorRed))
+  table.append(Cell('2', 2, ColorBlack))
+  table.append(Cell('3', 2, ColorRed))
+  table.append(Cell('4', 2, ColorBlack))
+  table.append(Cell('5', 2, ColorRed))
+  table.append(Cell('6', 2, ColorBlack))
+  table.append(Cell('7', 2, ColorRed))
+  table.append(Cell('8', 2, ColorBlack))
+
+
+def show_table():
+  def green_bar():
+    return '{}|{}'.format('\033[0;32m', '\033[0m')
+
+  for row in table:
+    print('{}{}{}'.format(green_bar(), row, green_bar()))
 
 
 def create_players():
@@ -69,3 +106,5 @@ def play():
 
 if __name__ == '__main__':
   play()
+  create_table()
+  show_table()
