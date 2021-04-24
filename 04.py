@@ -33,7 +33,7 @@ class Player:
   def info(self):
     print('{} has {} coins'.format(self.name, self.coins))
 
-  def bet(self) -> int:
+  def bet(self) -> list[str, int]:
     raise NotImplementedError
 
 
@@ -44,12 +44,15 @@ class Human(Player):
   def __init__(self, name: str, coins: int):
     super().__init__(name, coins)
 
-  def bet(self) -> int:
+  def bet(self) -> list[str, int]:
     bet_coins = 'invalid'
+    bet_cell = 'invalid'
     while not self.verify_bet_coin(bet_coins):
       bet_coins = input('何枚BETしますか？ (1-99) -> ')
+    while not self.verify_bet_cell(bet_cell):
+      bet_cell = input('どこにBETしますか？ (R,B,1-8) -> ')
     self.coins -= int(bet_coins)
-    return bet_coins
+    return bet_cell, bet_coins
 
   def verify_bet_coin(self, coins: str) -> bool:
     if not str.isdecimal(coins):
@@ -57,16 +60,22 @@ class Human(Player):
     coins_ = int(coins)
     return self.MIN_BET <= coins_ <= self.MAX_BET
 
+  def verify_bet_cell(self, cell_name: str) -> bool:
+    cell_names = [i.name for i in filter(lambda row: row.name == cell_name, table)]
+    return cell_names.count(cell_name) != 0
+
 
 class Computer(Player):
   def __init__(self, name: str, coins: int):
     super().__init__(name, coins)
 
-  def bet(self) -> int:
+  def bet(self) -> list[str, int]:
+    cell_names = [row.name for row in table]
+    bet_cell = cell_names[random.randint(0, len(cell_names) - 1)]
     bet_coin = random.randint(self.MIN_BET, self.MAX_BET)
     bet_coin = bet_coin if bet_coin <= self.coins else self.coins
     self.coins -= bet_coin
-    return bet_coin
+    return bet_cell, bet_coin
 
 
 def create_table():
@@ -107,8 +116,8 @@ def play():
   for p in players:
     p.info()
   for p in players:
-    bet_coin = p.bet()
-    print('{}は{}コインBETしました'.format(p.name, bet_coin))
+    bet_cell, bet_coin = p.bet()
+    print('{}は{}コインを{}にBETしました'.format(p.name, bet_coin, bet_cell))
   for p in players:
     p.info()
 
