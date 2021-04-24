@@ -18,18 +18,26 @@ class Cell:
     return '{}{}(x{})\033[0m'.format(self.color[1], self.name, self.rate)
 
 
+table: list[Cell] = []
+
+
 class Player:
   def __init__(self, name: str, coins: int):
+    global table
     Player.MIN_BET = 1
     Player.MAX_BET = 99
     self.name = name
     self.coins = coins
+    self.bets: dict[str, int] = {row.name: 0 for row in table}
 
   def info(self):
     print('{} has {} coins'.format(self.name, self.coins))
 
   def bet(self) -> int:
     raise NotImplementedError
+
+
+players: list[Player] = []
 
 
 class Human(Player):
@@ -59,10 +67,6 @@ class Computer(Player):
     bet_coin = bet_coin if bet_coin <= self.coins else self.coins
     self.coins -= bet_coin
     return bet_coin
-
-
-players: list[Player] = []
-table: list[Cell] = []
 
 
 def create_table():
@@ -105,6 +109,6 @@ def play():
 
 
 if __name__ == '__main__':
-  play()
   create_table()
   show_table()
+  play()
