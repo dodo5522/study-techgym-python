@@ -63,7 +63,7 @@ class Human(Player):
     if not str.isdecimal(coins):
       return False
     coins_ = int(coins)
-    return self.MIN_BET <= coins_ <= self.MAX_BET
+    return (self.MIN_BET <= coins_ <= self.MAX_BET) and (coins_ <= self.coins)
 
   def verify_bet_cell(self, cell_name: str) -> bool:
     cell_names = [i.name for i in filter(lambda row: row.name == cell_name, table)]
