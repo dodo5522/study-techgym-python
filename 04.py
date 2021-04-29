@@ -110,20 +110,23 @@ def create_players():
   global players
   players = [Human('MY', 500)]
   players.extend([Computer('C{}'.format(i), 500) for i in range(3)])
+  for p in players:
+    p.info()
+
+
+def bet_players():
+  global players
+  for p in players:
+    cell, coins = p.bet()
+    p.set_bet_coins(cell, coins)
+    print('{}は{}コインを{}にBETしました'.format(p.name, coins, cell))
 
 
 def play():
   global players
   create_players()
   show_table()
-  for p in players:
-    p.info()
-  for p in players:
-    cell, coins = p.bet()
-    p.set_bet_coins(cell, coins)
-    print('{}は{}コインを{}にBETしました'.format(p.name, coins, cell))
-  for p in players:
-    p.info()
+  bet_players()
   show_table()
 
 
