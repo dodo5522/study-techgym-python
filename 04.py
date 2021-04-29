@@ -18,9 +18,6 @@ class Cell:
     return '{}{}(x{})\033[0m'.format(self.color[1], self.name, self.rate)
 
 
-table: list[Cell] = []
-
-
 class Player:
   def __init__(self, name: str, coins: int):
     global table
@@ -39,7 +36,12 @@ class Player:
   def set_bet_coins(self, bet_cell: str, bet_coins: int) -> None:
     self.bets[bet_cell] = bet_coins
 
+  def reset_table(self):
+    for name in self.bets.keys():
+      self.bets[name] = 0
 
+
+table: list[Cell] = []
 players: list[Player] = []
 
 
@@ -81,24 +83,33 @@ class Computer(Player):
     return bet_cell, bet_coins
 
 
-def create_table() -> None:
-  table.append(Cell('R', 8, ColorRed))
-  table.append(Cell('B', 8, ColorBlack))
-  table.append(Cell('1', 2, ColorRed))
-  table.append(Cell('2', 2, ColorBlack))
-  table.append(Cell('3', 2, ColorRed))
-  table.append(Cell('4', 2, ColorBlack))
-  table.append(Cell('5', 2, ColorRed))
-  table.append(Cell('6', 2, ColorBlack))
-  table.append(Cell('7', 2, ColorRed))
-  table.append(Cell('8', 2, ColorBlack))
+def initialize() -> None:
+  def create_table() -> None:
+    table.append(Cell('R', 8, ColorRed))
+    table.append(Cell('B', 8, ColorBlack))
+    table.append(Cell('1', 2, ColorRed))
+    table.append(Cell('2', 2, ColorBlack))
+    table.append(Cell('3', 2, ColorRed))
+    table.append(Cell('4', 2, ColorBlack))
+    table.append(Cell('5', 2, ColorRed))
+    table.append(Cell('6', 2, ColorBlack))
+    table.append(Cell('7', 2, ColorRed))
+    table.append(Cell('8', 2, ColorBlack))
+
+  def create_players() -> None:
+    players.append(Human('MY', 500))
+    players.extend([Computer('C{}'.format(i), 500) for i in range(3)])
+    for p in players:
+      p.info()
+
+  create_table()
+  create_players()
 
 
 def show_table() -> None:
   def green_bar():
     return '{}|{}'.format('\033[0;32m', '\033[0m')
 
-  global players
   title = '| _____ | {} |'.format(' | '.join([p.name for p in players])).replace('|', green_bar())
   print(title)
   for row in table:
@@ -106,16 +117,12 @@ def show_table() -> None:
     print(line)
 
 
-def create_players() -> None:
-  global players
-  players = [Human('MY', 500)]
-  players.extend([Computer('C{}'.format(i), 500) for i in range(3)])
+def reset_table() -> None:
   for p in players:
-    p.info()
+    p.reset_table()
 
 
 def bet_players() -> None:
-  global players
   for p in players:
     cell, coins = p.bet()
     p.set_bet_coins(cell, coins)
@@ -123,25 +130,48 @@ def bet_players() -> None:
 
 
 def check_hit() -> None:
-  global players
   cell = random.choice(table)
   print('選ばれたのは{}, レートは{}'.format(cell.name, cell.rate))
   hit_players = list(filter(lambda p: p.bets.get(cell.name) != 0, players))
   if len(hit_players) > 0:
     for p in hit_players:
-      print('{}は当たり{}コインを獲得しました'.format(p.name, cell.rate * p.bets.get(cell.name)))
+      got_coins = cell.rate * p.bets.get(cell.name)
+      p.coins += got_coins
+      print('{}は当たり{}コインを獲得しました'.format(p.name, got_coins))
   else:
     print('当たりはいませんでした')
 
 
-def play():
-  global players
-  create_players()
+def show_coins() -> None:
+  results = ['{}:{}'.format(p.name, p.coins) for p in players]
+  print('[持ちコイン] {}'.format(' / '.join(results)))
+
+
+def is_game_end() -> bool:
+  return any(map(lambda p: p.coins <= 0, players))
+
+
+def end_game() -> None:
+  lost_players = filter(lambda p: p.coins <= 0, players)
+  print('{}のコインがなくなったため、ゲームを終了します'.format(
+    ', '.join([p.name for p in lost_players])))
+
+
+def play_once():
   bet_players()
   show_table()
   check_hit()
+  show_coins()
+
+
+def play():
+  while is_game_end() is False:
+    play_once()
+    reset_table()
+  else:
+    end_game()
 
 
 if __name__ == '__main__':
-  create_table()
+  initialize()
   play()
