@@ -81,7 +81,7 @@ class Computer(Player):
     return bet_cell, bet_coins
 
 
-def create_table():
+def create_table() -> None:
   table.append(Cell('R', 8, ColorRed))
   table.append(Cell('B', 8, ColorBlack))
   table.append(Cell('1', 2, ColorRed))
@@ -94,7 +94,7 @@ def create_table():
   table.append(Cell('8', 2, ColorBlack))
 
 
-def show_table():
+def show_table() -> None:
   def green_bar():
     return '{}|{}'.format('\033[0;32m', '\033[0m')
 
@@ -106,7 +106,7 @@ def show_table():
     print(line)
 
 
-def create_players():
+def create_players() -> None:
   global players
   players = [Human('MY', 500)]
   players.extend([Computer('C{}'.format(i), 500) for i in range(3)])
@@ -114,7 +114,7 @@ def create_players():
     p.info()
 
 
-def bet_players():
+def bet_players() -> None:
   global players
   for p in players:
     cell, coins = p.bet()
@@ -122,12 +122,24 @@ def bet_players():
     print('{}は{}コインを{}にBETしました'.format(p.name, coins, cell))
 
 
+def check_hit() -> None:
+  global players
+  cell = random.choice(table)
+  print('選ばれたのは{}, レートは{}'.format(cell.name, cell.rate))
+  hit_players = list(filter(lambda p: p.bets.get(cell.name) != 0, players))
+  if len(hit_players) > 0:
+    for p in hit_players:
+      print('{}は当たり{}コインを獲得しました'.format(p.name, cell.rate * p.bets.get(cell.name)))
+  else:
+    print('当たりはいませんでした')
+
+
 def play():
   global players
   create_players()
-  show_table()
   bet_players()
   show_table()
+  check_hit()
 
 
 if __name__ == '__main__':
