@@ -53,6 +53,7 @@ class Player:
 
     self.cards.append(dealing_card)
     self.total_number += dealing_card.number
+    self.total_number = self.calc_total(self.total_number)
 
     if self.total_number > 21:
       self.result_ = ResultBurst
@@ -63,11 +64,26 @@ class Player:
       dealing_card.number, self.name, self.total_number, self.result_))
     return self.result_
 
-  def result(self):
+  def result(self) -> Result:
     return self.result_
 
-  def total(self):
+  def total(self) -> int:
     return self.total_number
+
+  def calc_total(self, current_total: int) -> int:
+    if current_total <= 21:
+      return current_total
+
+    total = sum([c.number for c in self.cards])
+    aces = len(list(filter(lambda c: c.display_name == 'A', self.cards)))
+
+    for _ in range(aces):
+      total -= 11
+      total += 1
+      if total <= 21:
+        break
+
+    return total
 
 
 class Human(Player):
@@ -103,7 +119,7 @@ class Computer(Player):
       return ChoiceHit
 
 
-class Game:
+class BlackJack:
   def __init__(self):
     self.me: Player = Human()
     self.ai: Player = Computer()
@@ -145,6 +161,8 @@ class Game:
     return cards
 
   def show_result(self, winner: Player) -> None:
+    max_cards = max([len(p.cards) for p in [self.me, self.ai]])
+
     for p in [self.me, self.ai]:
       print('{} w/ total {}, cards {}'.format(
         p.name, p.total(), ', '.join(['{}{}'.format(c.mark, c.display_name) for c in p.cards])))
@@ -156,7 +174,7 @@ class Game:
 
       for i, p in enumerate([self.me, self.ai]):
         for j, c in enumerate(p.cards):
-          plt.subplot(2, 6, (i * 6) + j + 1)
+          plt.subplot(2, max_cards, (i * max_cards) + j + 1)
           plt.axis("off")
           plt.imshow(c.image)
       plt.show()
@@ -196,5 +214,5 @@ class Game:
 
 
 if __name__ == '__main__':
-  game = Game()
+  game = BlackJack()
   game.play()
