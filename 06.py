@@ -8,10 +8,17 @@ from typing import List
 from typing import NewType
 
 
+Choice = NewType('Choice', int)
+NoChoice = Choice(0)
+ChoiceHit = Choice(1)
+ChoiceStand = Choice(2)
+
+
 Result = NewType('Result', int)
 NoResult = Result(0)
-Win = Result(1)
-Lose = Result(2)
+ResultBurst = Result(1)
+ResultBlackJack = Result(2)
+
 
 class Card:
   def __init__(self, mark: str, display_name: str, number: int, image: np.ndarray):
@@ -33,117 +40,161 @@ class Player:
     self.name = name
     self.cards: List[Card] = []
     self.total_number: int = 0
+    self.result_: Result = NoResult
+
+  def choice(self) -> Choice:
+    return NoChoice
+
+  def deal(self, cards: List[Card]) -> Result:
+    cards_not_dealed = list(filter(lambda c: not c.is_dealed(), cards))
+    dealing_card_index = random.randint(0, len(cards_not_dealed) - 1)
+    dealing_card = cards_not_dealed[dealing_card_index]
+    dealing_card.dealed()
+
+    self.cards.append(dealing_card)
+    self.total_number += dealing_card.number
+
+    if self.total_number > 21:
+      self.result_ = ResultBurst
+    elif self.total_number == 21:
+      self.result_ = ResultBlackJack
+
+    print('{} is dealed to {}, total {}, result {}'.format(
+      dealing_card.number, self.name, self.total_number, self.result_))
+    return self.result_
+
+  def result(self):
+    return self.result_
+
+  def total(self):
+    return self.total_number
 
 
 class Human(Player):
   def __init__(self):
     super().__init__('myself')
+    self.stand = False
+
+  def choice(self) -> Choice:
+    if len(self.cards) <= 1:
+      return ChoiceHit
+
+    if self.stand:
+      return ChoiceStand
+
+    in_data = ''
+    while True:
+      in_data = input('Hit(1) or stand(2)? > ').strip()
+      if in_data.isdigit() is True and (int(in_data) >= 1 and int(in_data) <= 2):
+        break
+
+    self.stand = Choice(int(in_data)) == ChoiceStand
+    return Choice(int(in_data))
 
 
 class Computer(Player):
   def __init__(self):
     super().__init__('ai')
 
-
-def load_image() -> List[np.ndarray]:
-  card_images: List[np.ndarray] = []
-  image_name = 'cards.jpg'
-  vsplit_number = 4
-  hsplit_number = 13
-
-  if not os.path.isfile(image_name):
-    response = requests.get('http://3156.bz/techgym/cards.jpg', allow_redirects=False)
-    with open(image_name, 'wb') as image:
-      image.write(response.content)
-
-  img = cv.imread('./{}'.format(image_name))
-  img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
- 
-  h, w = img.shape[:2]
-  crop_img = img[:h // vsplit_number * vsplit_number, :w // hsplit_number * hsplit_number]
-
-  for h_image in np.vsplit(crop_img, vsplit_number):
-    for v_image in np.hsplit(h_image, hsplit_number):
-      card_images.append(v_image)
-
-  return card_images
+  def choice(self) -> Choice:
+    if self.total_number > 17:
+      return ChoiceStand
+    else:
+      return ChoiceHit
 
 
-def create_cards(card_images: List[np.ndarray]) -> List[Card]:
-  cards: List[Card] = []
-  marks = ['ハート', 'スペード', 'ダイヤ', 'クローバー']
-  display_names = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
-  numbers = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10]
+class Game:
+  def __init__(self):
+    self.me: Player = Human()
+    self.ai: Player = Computer()
+    self.cards: List[Card] = self.create_cards(self.load_image())
 
-  for i, mark in enumerate(marks):
-    for j, number in enumerate(numbers):
-      cards.append(Card(mark, display_names[j], number, card_images[i * len(numbers) + j]))
+  def load_image(self):
+    card_images: List[np.ndarray] = []
+    image_name = 'cards.jpg'
+    vsplit_number = 4
+    hsplit_number = 13
 
-  return cards
+    if not os.path.isfile(image_name):
+      response = requests.get('http://3156.bz/techgym/cards.jpg', allow_redirects=False)
+      with open(image_name, 'wb') as image:
+        image.write(response.content)
 
+    img = cv.imread('./{}'.format(image_name))
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+  
+    h, w = img.shape[:2]
+    crop_img = img[:h // vsplit_number * vsplit_number, :w // hsplit_number * hsplit_number]
 
-def deal_card(cards: List[Card], player: Player) -> Card:
-  cards_not_dealed = list(filter(lambda c: not c.is_dealed(), cards))
-  dealing_card_index = random.randint(0, len(cards_not_dealed) - 1)
-  dealing_card = cards_not_dealed[dealing_card_index]
-  dealing_card.dealed()
+    for h_image in np.vsplit(crop_img, vsplit_number):
+      for v_image in np.hsplit(h_image, hsplit_number):
+        card_images.append(v_image)
 
-  player.cards.append(dealing_card)
-  player.total_number += 1
+    return card_images
 
-  return dealing_card
+  def create_cards(self, card_images: List[np.ndarray]) -> List[Card]:
+    cards: List[Card] = []
+    marks = ['ハート', 'スペード', 'ダイヤ', 'クローバー']
+    display_names = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+    numbers = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10]
 
+    for i, mark in enumerate(marks):
+      for j, number in enumerate(numbers):
+        cards.append(Card(mark, display_names[j], number, card_images[i * len(numbers) + j]))
 
-def result(player: Player) -> Result:
-  s = sum([c.number for c in player.cards])
-  print('sum: {}'.format(s))
-  if s == 21:
-    return Win
-  elif s > 21:
-    return Lose
-  else:
-    return NoResult
+    return cards
 
+  def show_result(self, winner: Player) -> None:
+    for p in [self.me, self.ai]:
+      print('{} w/ total {}, cards {}'.format(
+        p.name, p.total(), ', '.join(['{}{}'.format(c.mark, c.display_name) for c in p.cards])))
 
-def show_card(player: Player) -> None:
-  print('{} has {}'.format(player.name, ', '.join(['{}{}'.format(c.mark, c.display_name) for c in player.cards])))
-  for i, c in enumerate(player.cards):
-    plt.subplot(1, 6, i + 1)
-    plt.axis("off")
-    plt.imshow(c.image)
-  plt.show()
+    if winner is None:
+      print('Draw')
+    else:
+      print('{} win!!'.format(winner.name))
 
+      for i, p in enumerate([self.me, self.ai]):
+        for j, c in enumerate(p.cards):
+          plt.subplot(2, 6, (i * 6) + j + 1)
+          plt.axis("off")
+          plt.imshow(c.image)
+      plt.show()
 
-def play() -> None:
-  players = [Human(), Computer()]
-  cards = create_cards(load_image())
+  def judge(self) -> Player:
+    if all([p.result() == ResultBlackJack for p in [self.me, self.ai]]):
+      return None
+    elif all([p.result() == ResultBurst for p in [self.me, self.ai]]):
+      return None
+    elif self.me.result() == ResultBurst:
+      return self.ai
+    elif self.ai.result() == ResultBurst:
+      return self.me
+    elif self.me.total() > self.ai.total() or self.me.result() == ResultBlackJack:
+      return self.me
+    elif self.me.total() < self.ai.total() or self.ai.result() == ResultBlackJack:
+      return self.ai
+    else:
+      return None
 
-  counter = 0
-  player = None
-  winner = None
-  loser = None
+  def play(self) -> None:
+    while True:
+      my_choice = self.me.choice()
+      if my_choice == ChoiceHit:
+        if self.me.deal(self.cards) == ResultBurst:
+          break
 
-  while True:
-    player = players[counter & 1]
-    card = deal_card(cards, player)
-    print('{}: {}'.format(player.name, card.number))
-    print(result(player))
-    if result(player) == Win:
-      winner = player
-      break
-    elif result(player) == Lose:
-      loser = player
-      break
+      ai_choice = self.ai.choice()
+      if ai_choice == ChoiceHit:
+        if self.ai.deal(self.cards) == ResultBurst:
+          break
 
-  if winner != None:
-    print('Winner is {}!'.format(winner.name))
-    show_card(winner)
-  elif loser != None:
-    print('Loser is {}...'.format(loser.name))
-    show_card(loser)
-  else:
-    print('no one')
+      if all([my_choice == ChoiceStand, ai_choice == ChoiceStand]):
+        break
+
+    self.show_result(self.judge())
 
 
 if __name__ == '__main__':
-  play()
+  game = Game()
+  game.play()
