@@ -88,7 +88,7 @@ def play() -> None:
   level = 0
   start_message()
 
-  while level < len(levels):
+  while 0 <= level < len(levels):
     row = levels[level][0]
     col = levels[level][1]
 
@@ -103,9 +103,9 @@ def play() -> None:
 
     if not view_result(is_correct_number(mistake_number, input_number)):
       print(change_string(mistake_number, row, col))
-      break
-
-    level += 1
+      level -= 1
+    else:
+      level += 1
 
 
 if __name__ == '__main__':
