@@ -3,9 +3,9 @@ import random
 
 
 data = [
-  ['見', '見'],
-  ['土', '土'],
-  ['眼', '眼'],
+  ['見', '貝'],
+  ['土', '士'],
+  ['眠', '眼'],
 ]
 labels = {
   'A': 0,
@@ -14,18 +14,32 @@ labels = {
   'D': 3,
   'E': 4,
 }
-level = 1
-col = 5
-row = 4
+
+levels = [
+  # row, col
+  [3, 3],
+  [3, 4],
+  [4, 4],
+  [4, 5],
+  [5, 5],
+  [5, 6],
+  [6, 6],
+  [6, 7],
+  [7, 7],
+  [7, 8],
+  [8, 8],
+  [8, 9],
+  [9, 9],
+]
 
 
-def change_input_number(input_s: str) -> int:
+def change_input_number(input_s: str, col: int) -> int:
   col_num = labels.get(input_s[0])
   row_num = int(input_s[1], 10) - 1
   return col_num + row_num * col
 
 
-def change_string(input_n: int) -> str:
+def change_string(input_n: int, row: int, col: int) -> str:
   col_num = input_n % col
   row_num = input_n // row
   return '{}{}'.format(list(labels.keys())[col_num], row_num + 1)
@@ -41,21 +55,19 @@ def view_result(is_correct: bool) -> bool:
 
 
 def start_message() -> None:
-  print('違う感じの番号(例:A1)を入力してください')
+  print('違う漢字の番号(例:A1)を入力してください')
 
 
-def section_message() -> int:
-  print('レベル:{}'.format(level))
+def section_message(level: int) -> int:
+  print('レベル:{}'.format(level + 1))
 
 
-def view_question() -> None:
+def view_question(row: int, col: int) -> None:
   selected_data = data[random.randint(0, 2)]
   mistake_number = random.randint(0, row * col - 1)
 
-  print('デバッグ:mistake_number = {}'.format(mistake_number))
   print('{}'.format(selected_data))
-
-  print('/ |{}'.format('  '.join(labels.keys())))
+  print('/ |{}'.format('  '.join(list(labels.keys())[i] for i in range(col))))
   print('{}'.format(''.join(['-' for _ in range(3 * (col +  1))])))
 
   row_ = 0
@@ -73,18 +85,27 @@ def view_question() -> None:
 
 
 def play() -> None:
+  level = 0
   start_message()
-  mistake_number = view_question()
-  section_message()
 
-  choice = input('(例:A1)')
-  print('デバッグ:choice  = {}'.format(choice))
+  while level < len(levels):
+    row = levels[level][0]
+    col = levels[level][1]
 
-  input_number = change_input_number(choice)
-  print('デバッグ:input_number = {}'.format(change_input_number(choice)))
+    section_message(level)
+    mistake_number = view_question(row, col)
 
-  if not view_result(is_correct_number(mistake_number, input_number)):
-    print(change_string(mistake_number))
+    choice = input('(例:A1)')
+    #print('デバッグ:choice  = {}'.format(choice))
+
+    input_number = change_input_number(choice, col)
+    #print('デバッグ:input_number = {}'.format(change_input_number(choice)))
+
+    if not view_result(is_correct_number(mistake_number, input_number)):
+      print(change_string(mistake_number, row, col))
+      break
+
+    level += 1
 
 
 if __name__ == '__main__':
