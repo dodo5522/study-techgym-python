@@ -1,5 +1,6 @@
 import random
 from typing import Any
+from typing import List
 
 
 def is_hand(hand: Any) -> bool:
@@ -29,7 +30,7 @@ def get_my_hand() -> str:
     return input(message + '-> ')
 
 
-def get_your_hand() -> int:
+def get_bot_hand() -> int:
     return random.randint(0, 2)
 
 
@@ -61,14 +62,21 @@ def view_result(my_hand: int, your_hand: int) -> str:
 
 
 def play() -> None:
-    result = 'draw'
+    lives: List[int] = [3, 3]
+    mine = 0
+    bot = 1
+
     print('じゃんけんスタート')
-    while result == 'draw':
+    while all([(life > 0) for life in lives]):
         start_message()
         my_hand = get_my_hand()
         if not is_hand(my_hand):
             continue
-        result = view_result(int(my_hand), get_your_hand())
+        result = view_result(int(my_hand), get_bot_hand())
+        lose_idx = bot if result == 'win' else mine
+        if result != 'draw':
+            lives[lose_idx] -= 1
+            print('ライフ　自分:{} / 相手:{}'.format(lives[mine], lives[bot]))
 
 
 if __name__ == '__main__':
