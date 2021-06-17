@@ -67,16 +67,25 @@ def play() -> None:
     bot = 1
 
     print('じゃんけんスタート')
-    while all([(life > 0) for life in lives]):
+    while True:
         start_message()
+
         my_hand = get_my_hand()
         if not is_hand(my_hand):
             continue
+
         result = view_result(int(my_hand), get_bot_hand())
         lose_idx = bot if result == 'win' else mine
         if result != 'draw':
             lives[lose_idx] -= 1
             print('ライフ　自分:{} / 相手:{}'.format(lives[mine], lives[bot]))
+
+        if any([(life <= 0) for life in lives]):
+            is_replay = input('再選しますか？ (Y or N): ')
+            if is_replay == 'Y':
+                lives = [3, 3]
+            else:
+                break
 
 
 if __name__ == '__main__':
