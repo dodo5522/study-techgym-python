@@ -20,11 +20,13 @@ class Team:
   def info(self) -> str:
     return '{}: 攻撃力: {} / 守備力: {}'.format(self.name, self.attack, self.defense)
 
-  def get_hit_rate(self) -> int:
-    return random.randint(10, self.attack)
+  def get_hit_rate(self, is_special = False) -> int:
+    rate = 2 if is_special else 1
+    return rate * random.randint(10, self.attack)
 
-  def get_out_rate(self) -> int:
-    return random.randint(10, self.defense)
+  def get_out_rate(self, is_special = False) -> int:
+    rate = 2 if is_special else 1
+    return rate * random.randint(10, self.defense)
 
   def add_score(self, score):
     self.total_score += score
@@ -80,8 +82,12 @@ def get_play_inning(side: InningSide) -> int:
   myself = playing_teams.get('myself')
   enemy = playing_teams.get('enemy')
   teams_ = (myself, enemy) if side == InningTop else (enemy, myself)
-  diff_offence = (teams_[0].get_hit_rate() - teams_[1].get_out_rate()) // 10
+  diff_offence = (teams_[0].get_hit_rate(is_special_inning()) - teams_[1].get_out_rate(is_special_inning())) // 10
   return 0 if diff_offence < 0 else diff_offence
+
+
+def is_special_inning() -> bool:
+  return True if random.randint(0, 4) is 0 else False
 
 
 def play() -> None:
