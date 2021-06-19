@@ -60,7 +60,15 @@ def choice_team(player: str) -> None:
     num = input('{}のチームを選択してください(1~3): '.format(playser_jp))
     if not num.isdigit():
       continue
-    if int(num) < 1 or 2 < int(num):
+    if int(num) < 1 or 3 < int(num):
+      continue
+    selected_team = teams[int(num) - 1]
+    def is_team_used(name: str):
+      if playing_teams[name] is not None:
+        return playing_teams[name].name == selected_team.name
+      else:
+        return False
+    if len(list(filter(is_team_used, playing_teams.keys()))) > 0:
       continue
     playing_teams[player] = teams[int(num) - 1]
     break
