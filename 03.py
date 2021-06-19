@@ -1,4 +1,6 @@
 from typing import Any
+from typing import List
+from typing import Dict
 from typing import NewType
 import random
 
@@ -28,13 +30,13 @@ class Team:
     self.total_score += score
 
 
-teams: list[Team] = []
-team_info: dict[str, Any] = [
+teams: List[Team] = []
+team_info: Dict[str, Any] = [
   {'name': 'attackers', 'attack': 80, 'defence': 20},
   {'name': 'defenders', 'attack': 30, 'defence': 70},
   {'name': 'averages',  'attack': 50, 'defence': 50},
 ]
-playing_teams: dict[str, Team] = {
+playing_teams: Dict[str, Team] = {
   'myself': None,
   'enemy': None,
 }
@@ -54,8 +56,14 @@ def show_teams() -> None:
 def choice_team(player: str) -> None:
   global playing_teams
   playser_jp = '自分' if player == 'myself' else '相手'
-  num = input('{}のチームを選択してください(1~3): '.format(playser_jp))
-  playing_teams[player] = teams[int(num) - 1]
+  while True:
+    num = input('{}のチームを選択してください(1~3): '.format(playser_jp))
+    if not num.isdigit():
+      continue
+    if int(num) < 1 or 2 < int(num):
+      continue
+    playing_teams[player] = teams[int(num) - 1]
+    break
   print('{}のチームは「{}」です'.format(playser_jp, playing_teams.get(player).name))
 
 
