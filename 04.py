@@ -42,6 +42,9 @@ class Player:
     for name in self.bets.keys():
       self.bets[name] = 0
 
+  def get_bet_cell_names(self) -> List[str]:
+    return list(filter(lambda name : self.bets.get(name) > 0, self.bets.keys()))
+
 
 table: Dict[str, Cell] = {}
 players: List[Player] = []
@@ -131,17 +134,30 @@ def bet_players() -> None:
 
 
 def check_hit() -> None:
-  name = random.choice(list(table.keys()))
-  cell = table.get(name)
-  print('選ばれたのは{}({}), レートは{}'.format(name, cell.color[0], cell.rate))
+  loose_cell_names = ('R', 'B')
+  target_cell_names = list(table.keys())
+  for cell_name in loose_cell_names:
+    target_cell_names.remove(cell_name)
 
-  def is_match_color(player):
-    return player.bets.get(cell.name) != 0
+  name = random.choice(target_cell_names)
+  cell = table.get(name)
+  color = cell.color
+  print('選ばれたのは{}({}), レートは{}'.format(name, color[0], cell.rate))
+
+  def is_match_color(p: Player):
+    bet_name = p.get_bet_cell_names()[0]
+    bet_color = table.get(bet_name).color
+    if bet_name in loose_cell_names:
+      return bet_color == color
+    else:
+      return bet_name == name
 
   hit_players = list(filter(is_match_color, players))
   if len(hit_players) > 0:
     for p in hit_players:
-      got_coins = cell.rate * p.bets.get(cell.name)
+      bet_name = p.get_bet_cell_names()[0]
+      bet_cell = table.get(bet_name)
+      got_coins = bet_cell.rate * p.bets.get(bet_name)
       p.coins += got_coins
       print('{}は当たり{}コインを獲得しました'.format(p.name, got_coins))
   else:
