@@ -34,6 +34,9 @@ class Card:
   def is_dealed(self) -> bool:
     return self.dealed_
 
+  def reset(self) -> None:
+    self.dealed_ = False
+
 
 class Player:
   def __init__(self, name: str):
@@ -52,7 +55,8 @@ class Player:
   def choice(self) -> Choice:
     return NoChoice
 
-  def bet(self, coins_ = 100) -> bool:
+  def bet(self) -> bool:
+    coins_ = 100
     if self.coins <= 0:
       return False
 
@@ -130,6 +134,23 @@ class Human(Player):
 
     self.stand = Choice(int(in_data)) == ChoiceStand
     return Choice(int(in_data))
+
+  def bet(self) -> bool:
+    if self.coins <= 0:
+      return False
+
+    coins_max = 100 if self.coins >= 100 else self.coins
+    bet_coins = 0
+    while True:
+      coins_s = input('何枚BETしますか？ : (10-{}) > '.format(coins_max))
+      if coins_s.isdigit() and (10 <= int(coins_s) <= coins_max):
+        bet_coins = int(coins_s)
+        break
+
+    self.bet_coins = bet_coins
+    self.coins -= bet_coins
+    print('{}がBETしたコインは{}'.format(self.name, self.bet_coins))
+    return True
 
 
 class Computer(Player):
@@ -222,6 +243,8 @@ class BlackJack:
   def reset(self):
     for p in [self.me, self.ai]:
       p.reset()
+    for c in self.cards:
+      c.reset()
 
   def play(self) -> None:
     while True:
@@ -250,7 +273,8 @@ class BlackJack:
           break
 
       winner = self.judge()
-      winner.add_coins()
+      if winner != None:
+        winner.add_coins()
       self.show_result(winner)
       self.reset()
 
