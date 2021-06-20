@@ -41,9 +41,29 @@ class Player:
     self.cards: List[Card] = []
     self.total_number: int = 0
     self.result_: Result = NoResult
+    self.coins = 500
+    self.bet_coins = 0
+
+  def reset(self) -> None:
+    self.cards: List[Card] = []
+    self.total_number: int = 0
+    self.result_: Result = NoResult
 
   def choice(self) -> Choice:
     return NoChoice
+
+  def bet(self, coins_ = 100) -> bool:
+    if self.coins <= 0:
+      return False
+
+    coins = coins_ if coins_ < self.coins else self.coins
+    self.bet_coins = coins
+    self.coins -= coins
+    print('{}がBETしたコインは{}'.format(self.name, self.bet_coins))
+    return True
+
+  def add_coins(self) -> None:
+    self.coins += self.bet_coins * 2
 
   def deal(self, cards: List[Card]) -> Result:
     cards_not_dealed = list(filter(lambda c: not c.is_dealed(), cards))
@@ -89,6 +109,10 @@ class Player:
 class Human(Player):
   def __init__(self):
     super().__init__('myself')
+    self.stand = False
+
+  def reset(self) -> None:
+    super().reset()
     self.stand = False
 
   def choice(self) -> Choice:
@@ -195,22 +219,40 @@ class BlackJack:
     else:
       return None
 
+  def reset(self):
+    for p in [self.me, self.ai]:
+      p.reset()
+
   def play(self) -> None:
     while True:
-      my_choice = self.me.choice()
-      if my_choice == ChoiceHit:
-        if self.me.deal(self.cards) == ResultBurst:
-          break
+      can_bet = True
+      for p in [self.me, self.ai]:
+        print('{}の持ちコインは{}枚'.format(p.name, p.coins))
+        if not p.bet():
+          can_bet = False
 
-      ai_choice = self.ai.choice()
-      if ai_choice == ChoiceHit:
-        if self.ai.deal(self.cards) == ResultBurst:
-          break
-
-      if all([my_choice == ChoiceStand, ai_choice == ChoiceStand]):
+      if not can_bet:
+        print('終了します')
         break
 
-    self.show_result(self.judge())
+      while True:
+        my_choice = self.me.choice()
+        if my_choice == ChoiceHit:
+          if self.me.deal(self.cards) == ResultBurst:
+            break
+
+        ai_choice = self.ai.choice()
+        if ai_choice == ChoiceHit:
+          if self.ai.deal(self.cards) == ResultBurst:
+            break
+
+        if all([my_choice == ChoiceStand, ai_choice == ChoiceStand]):
+          break
+
+      winner = self.judge()
+      winner.add_coins()
+      self.show_result(winner)
+      self.reset()
 
 
 if __name__ == '__main__':
