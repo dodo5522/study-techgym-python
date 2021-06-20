@@ -1,4 +1,6 @@
-from typing import Any
+from typing import List
+from typing import Tuple
+from typing import Dict
 from typing import NewType
 import random
 
@@ -25,12 +27,12 @@ class Player:
     Player.MAX_BET = 99
     self.name = name
     self.coins = coins
-    self.bets: dict[str, int] = {row.name: 0 for row in table}
+    self.bets: dict[str, int] = {name: 0 for name in table.keys()}
 
   def info(self):
     print('{} has {} coins'.format(self.name, self.coins))
 
-  def bet(self) -> list[str, int]:
+  def bet(self) -> Tuple[str, int]:
     raise NotImplementedError
 
   def set_bet_coins(self, bet_cell: str, bet_coins: int) -> None:
@@ -41,15 +43,15 @@ class Player:
       self.bets[name] = 0
 
 
-table: list[Cell] = []
-players: list[Player] = []
+table: Dict[str, Cell] = {}
+players: List[Player] = []
 
 
 class Human(Player):
   def __init__(self, name: str, coins: int):
     super().__init__(name, coins)
 
-  def bet(self) -> list[str, int]:
+  def bet(self) -> Tuple[str, int]:
     bet_coins = ''
     bet_cell = ''
     while not self.verify_bet_coin(bet_coins):
@@ -66,16 +68,15 @@ class Human(Player):
     return (self.MIN_BET <= coins_ <= self.MAX_BET) and (coins_ <= self.coins)
 
   def verify_bet_cell(self, cell_name: str) -> bool:
-    cell_names = [i.name for i in filter(lambda row: row.name == cell_name, table)]
-    return cell_names.count(cell_name) != 0
+    return list(table.keys()).count(cell_name) > 0
 
 
 class Computer(Player):
   def __init__(self, name: str, coins: int):
     super().__init__(name, coins)
 
-  def bet(self) -> list[str, int]:
-    cell_names = [row.name for row in table]
+  def bet(self) -> Tuple[str, int]:
+    cell_names = [name for name in table.keys()]
     bet_cell = cell_names[random.randint(0, len(cell_names) - 1)]
     bet_coins = random.randint(self.MIN_BET, self.MAX_BET)
     bet_coins = bet_coins if bet_coins <= self.coins else self.coins
@@ -85,16 +86,16 @@ class Computer(Player):
 
 def initialize() -> None:
   def create_table() -> None:
-    table.append(Cell('R', 8, ColorRed))
-    table.append(Cell('B', 8, ColorBlack))
-    table.append(Cell('1', 2, ColorRed))
-    table.append(Cell('2', 2, ColorBlack))
-    table.append(Cell('3', 2, ColorRed))
-    table.append(Cell('4', 2, ColorBlack))
-    table.append(Cell('5', 2, ColorRed))
-    table.append(Cell('6', 2, ColorBlack))
-    table.append(Cell('7', 2, ColorRed))
-    table.append(Cell('8', 2, ColorBlack))
+    table['R'] = Cell('R', 2, ColorRed)
+    table['B'] = Cell('B', 2, ColorBlack)
+    table['1'] = Cell('1', 8, ColorRed)
+    table['2'] = Cell('2', 8, ColorBlack)
+    table['3'] = Cell('3', 8, ColorRed)
+    table['4'] = Cell('4', 8, ColorBlack)
+    table['5'] = Cell('5', 8, ColorRed)
+    table['6'] = Cell('6', 8, ColorBlack)
+    table['7'] = Cell('7', 8, ColorRed)
+    table['8'] = Cell('8', 8, ColorBlack)
 
   def create_players() -> None:
     players.append(Human('MY', 500))
@@ -112,8 +113,8 @@ def show_table() -> None:
 
   title = '| _____ | {} |'.format(' | '.join([p.name for p in players])).replace('|', green_bar())
   print(title)
-  for row in table:
-    line = '| {} | {} |'.format(row, ' | '.join(['{:02d}'.format(p.bets.get(row.name)) for p in players])).replace('|', green_bar())
+  for name in table.keys():
+    line = '| {} | {} |'.format(table.get(name), ' | '.join(['{:02d}'.format(p.bets.get(name)) for p in players])).replace('|', green_bar())
     print(line)
 
 
@@ -130,9 +131,14 @@ def bet_players() -> None:
 
 
 def check_hit() -> None:
-  cell = random.choice(table)
-  print('選ばれたのは{}, レートは{}'.format(cell.name, cell.rate))
-  hit_players = list(filter(lambda p: p.bets.get(cell.name) != 0, players))
+  name = random.choice(list(table.keys()))
+  cell = table.get(name)
+  print('選ばれたのは{}({}), レートは{}'.format(name, cell.color[0], cell.rate))
+
+  def is_match_color(player):
+    return player.bets.get(cell.name) != 0
+
+  hit_players = list(filter(is_match_color, players))
   if len(hit_players) > 0:
     for p in hit_players:
       got_coins = cell.rate * p.bets.get(cell.name)
