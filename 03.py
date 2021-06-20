@@ -1,4 +1,6 @@
 from typing import Any
+from typing import List
+from typing import Dict
 from typing import NewType
 import random
 
@@ -18,23 +20,25 @@ class Team:
   def info(self) -> str:
     return '{}: 攻撃力: {} / 守備力: {}'.format(self.name, self.attack, self.defense)
 
-  def get_hit_rate(self) -> int:
-    return random.randint(10, self.attack)
+  def get_hit_rate(self, is_special = False) -> int:
+    rate = 2 if is_special else 1
+    return rate * random.randint(10, self.attack)
 
-  def get_out_rate(self) -> int:
-    return random.randint(10, self.defense)
+  def get_out_rate(self, is_special = False) -> int:
+    rate = 2 if is_special else 1
+    return rate * random.randint(10, self.defense)
 
   def add_score(self, score):
     self.total_score += score
 
 
-teams: list[Team] = []
-team_info: dict[str, Any] = [
+teams: List[Team] = []
+team_info: Dict[str, Any] = [
   {'name': 'attackers', 'attack': 80, 'defence': 20},
   {'name': 'defenders', 'attack': 30, 'defence': 70},
   {'name': 'averages',  'attack': 50, 'defence': 50},
 ]
-playing_teams: dict[str, Team] = {
+playing_teams: Dict[str, Team] = {
   'myself': None,
   'enemy': None,
 }
@@ -54,8 +58,22 @@ def show_teams() -> None:
 def choice_team(player: str) -> None:
   global playing_teams
   playser_jp = '自分' if player == 'myself' else '相手'
-  num = input('{}のチームを選択してください(1~3): '.format(playser_jp))
-  playing_teams[player] = teams[int(num) - 1]
+  while True:
+    num = input('{}のチームを選択してください(1~3): '.format(playser_jp))
+    if not num.isdigit():
+      continue
+    if int(num) < 1 or 3 < int(num):
+      continue
+    selected_team = teams[int(num) - 1]
+    def is_team_used(name: str):
+      if playing_teams[name] is not None:
+        return playing_teams[name].name == selected_team.name
+      else:
+        return False
+    if len(list(filter(is_team_used, playing_teams.keys()))) > 0:
+      continue
+    playing_teams[player] = teams[int(num) - 1]
+    break
   print('{}のチームは「{}」です'.format(playser_jp, playing_teams.get(player).name))
 
 
@@ -64,8 +82,12 @@ def get_play_inning(side: InningSide) -> int:
   myself = playing_teams.get('myself')
   enemy = playing_teams.get('enemy')
   teams_ = (myself, enemy) if side == InningTop else (enemy, myself)
-  diff_offence = (teams_[0].get_hit_rate() - teams_[1].get_out_rate()) // 10
+  diff_offence = (teams_[0].get_hit_rate(is_special_inning()) - teams_[1].get_out_rate(is_special_inning())) // 10
   return 0 if diff_offence < 0 else diff_offence
+
+
+def is_special_inning() -> bool:
+  return True if random.randint(0, 4) is 0 else False
 
 
 def play() -> None:

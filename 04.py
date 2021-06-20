@@ -1,4 +1,6 @@
-from typing import Any
+from typing import List
+from typing import Tuple
+from typing import Dict
 from typing import NewType
 import random
 
@@ -25,13 +27,16 @@ class Player:
     Player.MAX_BET = 99
     self.name = name
     self.coins = coins
-    self.bets: dict[str, int] = {row.name: 0 for row in table}
+    self.bets: dict[str, int] = {name: 0 for name in table.keys()}
 
   def info(self):
     print('{} has {} coins'.format(self.name, self.coins))
 
-  def bet(self) -> list[str, int]:
+  def bet(self) -> Tuple[str, int]:
     raise NotImplementedError
+
+  def add(self, coins: int) -> None:
+    self.coins += coins
 
   def set_bet_coins(self, bet_cell: str, bet_coins: int) -> None:
     self.bets[bet_cell] = bet_coins
@@ -40,23 +45,38 @@ class Player:
     for name in self.bets.keys():
       self.bets[name] = 0
 
+  def get_bet_cell_names(self) -> List[str]:
+    return list(filter(lambda name : self.bets.get(name) > 0, self.bets.keys()))
 
-table: list[Cell] = []
-players: list[Player] = []
+  def set_double_up(self) -> bool:
+    raise NotImplementedError
+
+
+table: Dict[str, Cell] = {}
+players: List[Player] = []
 
 
 class Human(Player):
   def __init__(self, name: str, coins: int):
     super().__init__(name, coins)
+    self.bet_cell = ''
+    self.bet_coins = 0
+    self.is_double_up = False
 
-  def bet(self) -> list[str, int]:
+  def bet(self) -> Tuple[str, int]:
+    if self.is_double_up:
+      self.is_double_up = False
+      return self.bet_cell, self.bet_coins * 2
+
     bet_coins = ''
     bet_cell = ''
     while not self.verify_bet_coin(bet_coins):
       bet_coins = input('何枚BETしますか？ (1-99) -> ')
     while not self.verify_bet_cell(bet_cell):
       bet_cell = input('どこにBETしますか？ (R,B,1-8) -> ')
-    self.coins -= int(bet_coins)
+    self.bet_cell = bet_cell
+    self.bet_coins = int(bet_coins)
+    self.coins -= self.bet_coins
     return bet_cell, int(bet_coins)
 
   def verify_bet_coin(self, coins: str) -> bool:
@@ -66,35 +86,49 @@ class Human(Player):
     return (self.MIN_BET <= coins_ <= self.MAX_BET) and (coins_ <= self.coins)
 
   def verify_bet_cell(self, cell_name: str) -> bool:
-    cell_names = [i.name for i in filter(lambda row: row.name == cell_name, table)]
-    return cell_names.count(cell_name) != 0
+    return list(table.keys()).count(cell_name) > 0
+
+  def set_double_up(self) -> bool:
+    ans = input('ダブルアップしますか？ : (Y or N) > ')
+    self.is_double_up = (ans[0].upper() == 'Y')
+    return self.is_double_up
 
 
 class Computer(Player):
   def __init__(self, name: str, coins: int):
     super().__init__(name, coins)
+    self.bet_coins = 0
+    self.is_double_up = False
 
-  def bet(self) -> list[str, int]:
-    cell_names = [row.name for row in table]
-    bet_cell = cell_names[random.randint(0, len(cell_names) - 1)]
-    bet_coins = random.randint(self.MIN_BET, self.MAX_BET)
-    bet_coins = bet_coins if bet_coins <= self.coins else self.coins
-    self.coins -= bet_coins
-    return bet_cell, bet_coins
+  def bet(self) -> Tuple[str, int]:
+    if self.is_double_up:
+      self.is_double_up = False
+      return self.bet_cell, self.bet_coins * 2
+
+    cell_names = [name for name in table.keys()]
+    self.bet_cell = cell_names[random.randint(0, len(cell_names) - 1)]
+    self.bet_coins = random.randint(self.MIN_BET, self.MAX_BET)
+    self.bet_coins = self.bet_coins if self.bet_coins <= self.coins else self.coins
+    self.coins -= self.bet_coins
+    return self.bet_cell, self.bet_coins
+
+  def set_double_up(self) -> bool:
+    self.is_double_up = random.choice((True, False))
+    return self.is_double_up
 
 
 def initialize() -> None:
   def create_table() -> None:
-    table.append(Cell('R', 8, ColorRed))
-    table.append(Cell('B', 8, ColorBlack))
-    table.append(Cell('1', 2, ColorRed))
-    table.append(Cell('2', 2, ColorBlack))
-    table.append(Cell('3', 2, ColorRed))
-    table.append(Cell('4', 2, ColorBlack))
-    table.append(Cell('5', 2, ColorRed))
-    table.append(Cell('6', 2, ColorBlack))
-    table.append(Cell('7', 2, ColorRed))
-    table.append(Cell('8', 2, ColorBlack))
+    table['R'] = Cell('R', 2, ColorRed)
+    table['B'] = Cell('B', 2, ColorBlack)
+    table['1'] = Cell('1', 8, ColorRed)
+    table['2'] = Cell('2', 8, ColorBlack)
+    table['3'] = Cell('3', 8, ColorRed)
+    table['4'] = Cell('4', 8, ColorBlack)
+    table['5'] = Cell('5', 8, ColorRed)
+    table['6'] = Cell('6', 8, ColorBlack)
+    table['7'] = Cell('7', 8, ColorRed)
+    table['8'] = Cell('8', 8, ColorBlack)
 
   def create_players() -> None:
     players.append(Human('MY', 500))
@@ -112,8 +146,8 @@ def show_table() -> None:
 
   title = '| _____ | {} |'.format(' | '.join([p.name for p in players])).replace('|', green_bar())
   print(title)
-  for row in table:
-    line = '| {} | {} |'.format(row, ' | '.join(['{:02d}'.format(p.bets.get(row.name)) for p in players])).replace('|', green_bar())
+  for name in table.keys():
+    line = '| {} | {} |'.format(table.get(name), ' | '.join(['{:02d}'.format(p.bets.get(name)) for p in players])).replace('|', green_bar())
     print(line)
 
 
@@ -130,14 +164,34 @@ def bet_players() -> None:
 
 
 def check_hit() -> None:
-  cell = random.choice(table)
-  print('選ばれたのは{}, レートは{}'.format(cell.name, cell.rate))
-  hit_players = list(filter(lambda p: p.bets.get(cell.name) != 0, players))
+  loose_cell_names = ('R', 'B')
+  target_cell_names = list(table.keys())
+  for cell_name in loose_cell_names:
+    target_cell_names.remove(cell_name)
+
+  name = random.choice(target_cell_names)
+  cell = table.get(name)
+  color = cell.color
+  print('選ばれたのは{}({}), レートは{}'.format(name, color[0], cell.rate))
+
+  def is_match_color(p: Player):
+    bet_name = p.get_bet_cell_names()[0]
+    bet_color = table.get(bet_name).color
+    if bet_name in loose_cell_names:
+      return bet_color == color
+    else:
+      return bet_name == name
+
+  hit_players = list(filter(is_match_color, players))
   if len(hit_players) > 0:
     for p in hit_players:
-      got_coins = cell.rate * p.bets.get(cell.name)
-      p.coins += got_coins
+      bet_name = p.get_bet_cell_names()[0]
+      bet_cell = table.get(bet_name)
+      got_coins = bet_cell.rate * p.bets.get(bet_name)
       print('{}は当たり{}コインを獲得しました'.format(p.name, got_coins))
+      p.add(got_coins)
+      if p.set_double_up():
+        print('{}はダブルアップしました'.format(p.name))
   else:
     print('当たりはいませんでした')
 

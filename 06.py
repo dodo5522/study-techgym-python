@@ -34,6 +34,9 @@ class Card:
   def is_dealed(self) -> bool:
     return self.dealed_
 
+  def reset(self) -> None:
+    self.dealed_ = False
+
 
 class Player:
   def __init__(self, name: str):
@@ -41,9 +44,30 @@ class Player:
     self.cards: List[Card] = []
     self.total_number: int = 0
     self.result_: Result = NoResult
+    self.coins = 500
+    self.bet_coins = 0
+
+  def reset(self) -> None:
+    self.cards: List[Card] = []
+    self.total_number: int = 0
+    self.result_: Result = NoResult
 
   def choice(self) -> Choice:
     return NoChoice
+
+  def bet(self) -> bool:
+    coins_ = 100
+    if self.coins <= 0:
+      return False
+
+    coins = coins_ if coins_ < self.coins else self.coins
+    self.bet_coins = coins
+    self.coins -= coins
+    print('{}がBETしたコインは{}'.format(self.name, self.bet_coins))
+    return True
+
+  def add_coins(self) -> None:
+    self.coins += self.bet_coins * 2
 
   def deal(self, cards: List[Card]) -> Result:
     cards_not_dealed = list(filter(lambda c: not c.is_dealed(), cards))
@@ -91,6 +115,10 @@ class Human(Player):
     super().__init__('myself')
     self.stand = False
 
+  def reset(self) -> None:
+    super().reset()
+    self.stand = False
+
   def choice(self) -> Choice:
     if len(self.cards) <= 1:
       return ChoiceHit
@@ -106,6 +134,23 @@ class Human(Player):
 
     self.stand = Choice(int(in_data)) == ChoiceStand
     return Choice(int(in_data))
+
+  def bet(self) -> bool:
+    if self.coins <= 0:
+      return False
+
+    coins_max = 100 if self.coins >= 100 else self.coins
+    bet_coins = 0
+    while True:
+      coins_s = input('何枚BETしますか？ : (10-{}) > '.format(coins_max))
+      if coins_s.isdigit() and (10 <= int(coins_s) <= coins_max):
+        bet_coins = int(coins_s)
+        break
+
+    self.bet_coins = bet_coins
+    self.coins -= bet_coins
+    print('{}がBETしたコインは{}'.format(self.name, self.bet_coins))
+    return True
 
 
 class Computer(Player):
@@ -195,22 +240,43 @@ class BlackJack:
     else:
       return None
 
+  def reset(self):
+    for p in [self.me, self.ai]:
+      p.reset()
+    for c in self.cards:
+      c.reset()
+
   def play(self) -> None:
     while True:
-      my_choice = self.me.choice()
-      if my_choice == ChoiceHit:
-        if self.me.deal(self.cards) == ResultBurst:
-          break
+      can_bet = True
+      for p in [self.me, self.ai]:
+        print('{}の持ちコインは{}枚'.format(p.name, p.coins))
+        if not p.bet():
+          can_bet = False
 
-      ai_choice = self.ai.choice()
-      if ai_choice == ChoiceHit:
-        if self.ai.deal(self.cards) == ResultBurst:
-          break
-
-      if all([my_choice == ChoiceStand, ai_choice == ChoiceStand]):
+      if not can_bet:
+        print('終了します')
         break
 
-    self.show_result(self.judge())
+      while True:
+        my_choice = self.me.choice()
+        if my_choice == ChoiceHit:
+          if self.me.deal(self.cards) == ResultBurst:
+            break
+
+        ai_choice = self.ai.choice()
+        if ai_choice == ChoiceHit:
+          if self.ai.deal(self.cards) == ResultBurst:
+            break
+
+        if all([my_choice == ChoiceStand, ai_choice == ChoiceStand]):
+          break
+
+      winner = self.judge()
+      if winner != None:
+        winner.add_coins()
+      self.show_result(winner)
+      self.reset()
 
 
 if __name__ == '__main__':
