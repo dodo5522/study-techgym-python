@@ -42,9 +42,14 @@ hand_df2.columns.names = ['feature', '特徴']
 id2 = ['100','101','102','103','110','111','106','113','108','114']
 hand_df2 = hand_df2.assign(id = id2).set_index('id')
 
+print('merge example:')
 print(hand_df2)
 print(hand_df1.merge(hand_df2, how='inner', on='id'))
 print(hand_df1.merge(hand_df2, how='outer', on='id'))
 print(hand_df1.merge(hand_df2, how='left', on='id'))
 print(hand_df1.merge(hand_df2, how='right', on='id'))
-print(hand_df1.merge(hand_df2, how='cross'))
+#print(hand_df1.merge(hand_df2, how='cross'))
+
+print('concat example:')
+print(pd.concat([hand_df1, hand_df2], axis=0))
+#print(pd.concat([hand_df1, hand_df2], axis=1, join='inner'))
