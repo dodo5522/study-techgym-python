@@ -4,6 +4,8 @@ import numpy as np
 # pandas API doc
 # https://pandas.pydata.org/pandas-docs/stable/index.html
 
+pd.set_option("display.max_rows", 100)
+
 feature1_en = ['gender','age','win','lose','draw']
 feature1_ja = ['性別','年齢','勝ち','負け','あいこ']
 
