@@ -45,14 +45,23 @@ hand_df2.columns.names = ['feature']
 hand_df2 = hand_df1.append(hand_df2)
 
 #必要であれば表示して確認する
-#display(hand_df2)
+print(hand_df1)
+print(hand_df2)
 
 #重複した行のみ表示
+print('only duplicated:')
+print(hand_df2[hand_df2.duplicated()])
+print(hand_df2.where(hand_df2.duplicated()).dropna())
 
+#true/false反転
+print('reverse duplicated:')
+print(~hand_df2.duplicated())
 
 #重複した行を削除
-
-
+print('drop duplicated:')
+print(hand_df2.drop_duplicates())
+print(hand_df2.where(~hand_df2.duplicated()).dropna())
 
 #NaNがないこと
-
+print(hand_df2.isna())
+print(hand_df2.isna().sum())
