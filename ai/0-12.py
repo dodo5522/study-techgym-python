@@ -1,7 +1,9 @@
 import logging
+import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import requests
+import seaborn as sns
 
 
 logger = logging.getLogger('main')
@@ -32,8 +34,22 @@ def get_data(url: str) -> pd.DataFrame:
 
 def main() -> None:
   df = get_data('https://archive.ics.uci.edu/ml/machine-learning-databases/balloons/adult+stretch.data')
+  df.columns = ['color', 'size', 'act', 'age', 'inflated']
   print(df)
-  print(df.info())
+
+  crossed_df = pd.crosstab(df.get('size'), df.get('color'))
+  print(crossed_df)
+
+  plt.subplot(3, 1, 1)
+  sns.countplot(y='color', data=df)
+
+  plt.subplot(3, 1, 2)
+  sns.countplot(y='color', hue='age', hue_order=['CHILD', 'ADULT'], data=df)
+
+  plt.subplot(3, 1, 3)
+  sns.countplot(y='color', hue='size', hue_order=['SMALL', 'LARGE'], data=df)
+
+  plt.show()
 
 
 if __name__ == '__main__':
