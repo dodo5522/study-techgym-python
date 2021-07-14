@@ -20,7 +20,7 @@ def get_data(url: str) -> pd.DataFrame:
     res = requests.get(url)
 
     if res.status_code != 200:
-      logger.err(res.content.decode('utf-8'))
+      logger.error(res.content.decode('utf-8'))
       return pd.DataFrame()
 
     with open(data_set_file, 'w') as fp:
@@ -32,7 +32,7 @@ def get_data(url: str) -> pd.DataFrame:
   return pd.read_csv(data_set_file)
 
 
-def main() -> None:
+def adult_stretch() -> None:
   df = get_data('https://archive.ics.uci.edu/ml/machine-learning-databases/balloons/adult+stretch.data')
   df.columns = ['color', 'size', 'act', 'age', 'inflated']
   print(df)
@@ -52,5 +52,31 @@ def main() -> None:
   plt.show()
 
 
+def tic_tac_toe() -> None:
+  df = get_data('https://archive.ics.uci.edu/ml/machine-learning-databases/tic-tac-toe/tic-tac-toe.data')
+  df.columns = [
+    'top-left-square',
+    'top-middle-square',
+    'top-right-square',
+    'middle-left-square',
+    'middle-middle-square',
+    'middle-right-square',
+    'bottom-left-square',
+    'bottom-middle-square',
+    'bottom-right-square',
+    'Class',
+  ]
+  print(df.info())
+  print(pd.crosstab(df.get('middle-middle-square'), df.get('Class')))
+
+  for row in range(3):
+    for col in range(3):
+      i = row * 3 + col
+      plt.subplot(3, 3, i + 1)
+      sns.countplot(x='Class', hue=df.columns[i], hue_order=['x', 'o', 'b'], data=df)
+
+  plt.show()
+
+
 if __name__ == '__main__':
-  main()
+  tic_tac_toe()
