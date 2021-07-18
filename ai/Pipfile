@@ -11,6 +11,7 @@ scipy = "*"
 matplotlib = "*"
 requests = "*"
 seaborn = "*"
+sklearn = "*"
 
 [dev-packages]
 

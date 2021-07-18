@@ -1,12 +1,13 @@
 import io
 import logging
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import requests
 import seaborn as sns
 from sklearn import linear_model
-from typing import TextIO
+from typing import TextIO, List
 
 
 DB_BASE_URL = 'https://archive.ics.uci.edu/ml/machine-learning-databases'
@@ -42,6 +43,28 @@ def get_dataframe(url: str, header: bool) -> pd.DataFrame:
   return pd.read_csv(get_data(url), header=(None if header is False else 0))
 
 
+def set_layout() -> List[plt.Axes]:
+  """
+  |---------|----|
+  | (1) (2) |2(3)|
+  |    1    |----|
+  | (4) (5) |3(6)|
+  |---------|----|
+  """
+  figsize=(12.8, 6.4)  # width, height
+  f = plt.figure(figsize=figsize, dpi=200)
+  gs = GridSpec(nrows=2, ncols=3, height_ratios=[1, 1])
+
+  gs1 = GridSpecFromSubplotSpec(nrows=2, ncols=2, subplot_spec=gs[0:2, 0:2])
+  area1 = f.add_subplot(gs1[:, :])
+
+  gs23 = GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs[0:2, 2])
+  area2 = f.add_subplot(gs23[0, :])
+  area3 = f.add_subplot(gs23[1, :])
+
+  return area1, area2, area3
+
+
 def wine() -> pd.DataFrame:
   print(get_data(f'{DB_BASE_URL}/wine/wine.names').read())
   df = get_dataframe(f'{DB_BASE_URL}/wine/wine.data', False)
@@ -75,14 +98,30 @@ def dump_wine(df: pd.DataFrame, show_figure: bool = True) -> None:
   model = linear_model.LinearRegression().fit(X, Y)
   print(f'coef: {model.coef_}, intercept: {model.intercept_}, score: {model.score(X, Y)}')
 
-  sns.pairplot(df.get([
-    'class',
-    'Alcohol',
-    'Malic acid',
-    'Ash',
-    'Total phenols',
-    'Color intensity',
-  ]), hue='class', diag_kind='hist')
+  a1, a2, a3 = set_layout()
+
+  sns.scatterplot(
+    x='Alcohol',
+    y='Color intensity',
+    hue='class',
+    data=df,
+    ax=a1
+  )
+  a1.plot(df.get('Alcohol'), model.predict(df.get(['Alcohol'])))
+
+  a2.set_xlabel('Alcohol')
+  a2.hist(df.get('Alcohol'))
+  a3.set_xlabel('Color intensity')
+  a3.hist(df.get('Color intensity'))
+
+#  sns.pairplot(df.get([
+#    'class',
+#    'Alcohol',
+#    'Malic acid',
+#    'Ash',
+#    'Total phenols',
+#    'Color intensity',
+#  ]), hue='class', diag_kind='hist')
 
   if show_figure:
     plt.show()
@@ -92,4 +131,4 @@ def dump_wine(df: pd.DataFrame, show_figure: bool = True) -> None:
 
 if __name__ == '__main__':
   df = wine()
-  dump_wine(df, True)
+  dump_wine(df, False)
