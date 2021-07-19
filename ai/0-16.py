@@ -96,24 +96,10 @@ def dump_wine(df: pd.DataFrame, show_figure: bool = True) -> None:
   Y = df.get('Color intensity')
 
   model = linear_model.LinearRegression().fit(X, Y)
-  print(f'coef: {model.coef_}, intercept: {model.intercept_}, score: {model.score(X, Y)}')
 
   a1, a2, a3 = set_layout()
 
-  sns.scatterplot(
-    x='Alcohol',
-    y='Color intensity',
-    hue='class',
-    data=df,
-    ax=a1
-  )
-  a1.plot(df.get('Alcohol'), model.predict(df.get(['Alcohol'])))
-
-  a2.set_xlabel('Alcohol')
-  a2.hist(df.get('Alcohol'))
-  a3.set_xlabel('Color intensity')
-  a3.hist(df.get('Color intensity'))
-
+  # a1: plt.Axes にpairplotを描画したい
 #  sns.pairplot(df.get([
 #    'class',
 #    'Alcohol',
@@ -122,6 +108,28 @@ def dump_wine(df: pd.DataFrame, show_figure: bool = True) -> None:
 #    'Total phenols',
 #    'Color intensity',
 #  ]), hue='class', diag_kind='hist')
+
+  a2.set_xlabel('Alcohol')
+  a2.hist(df.get('Alcohol'))
+# a3.set_xlabel('Color intensity')
+# a3.hist(df.get('Color intensity'))
+
+  sns.scatterplot(
+    x='Alcohol',
+    y='Color intensity',
+    hue='class',
+    data=df,
+    ax=a3
+  )
+
+  predicted_Y = model.predict(df.get(['Alcohol']))
+  score = model.score(X, Y)
+  a3.plot(X, predicted_Y)
+  a3.text(
+    X.min(),
+    predicted_Y.min(),
+    f'coef: {model.coef_[0]:.2f}\nintercept: {model.intercept_:.2f}\nscore: {score:.2f}',
+    bbox=dict(facecolor='white', alpha=0.5))
 
   if show_figure:
     plt.show()
