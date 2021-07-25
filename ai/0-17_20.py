@@ -6,7 +6,10 @@ import os
 import pandas as pd
 import requests
 import seaborn as sns
+import scipy as sp
 from sklearn import linear_model
+from sklearn import metrics
+from sklearn.model_selection import train_test_split
 from typing import TextIO, List, Dict
 
 
@@ -45,24 +48,25 @@ def get_dataframe(url: str, header: bool) -> pd.DataFrame:
 
 def set_layout() -> List[plt.Axes]:
   """
-  |---------|----|
-  | (1) (2) |2(3)|
-  |    1    |----|
-  | (4) (5) |3(6)|
-  |---------|----|
+  |---|---|
+  | 1 | 2 |
+  |---|---|
+  | 3 | 4 |
+  |---|---|
   """
-  figsize=(12.8, 6.4)  # width, height
+  figsize=(6.4, 6.4)  # width, height
   f = plt.figure(figsize=figsize, dpi=200)
-  gs = GridSpec(nrows=2, ncols=3, height_ratios=[1, 1])
+  gs = GridSpec(nrows=2, ncols=2, height_ratios=[1, 1])
 
-  gs1 = GridSpecFromSubplotSpec(nrows=2, ncols=2, subplot_spec=gs[0:2, 0:2])
-  area1 = f.add_subplot(gs1[:, :])
+  gs13 = GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs[0:2, 0])
+  area1 = f.add_subplot(gs13[0, :])
+  area3 = f.add_subplot(gs13[1, :])
 
-  gs23 = GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs[0:2, 2])
-  area2 = f.add_subplot(gs23[0, :])
-  area3 = f.add_subplot(gs23[1, :])
+  gs24 = GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs[0:2, 1])
+  area2 = f.add_subplot(gs24[0, :])
+  area4 = f.add_subplot(gs24[1, :])
 
-  return area1, area2, area3
+  return area1, area2, area3, area4
 
 
 def wine() -> pd.DataFrame:
@@ -87,56 +91,62 @@ def wine() -> pd.DataFrame:
   return df
 
 
-def create_models(
-    df: pd.DataFrame,
-    explanatory_label: str,
-    objective_labels: List[str]) -> Dict[str, linear_model._base.LinearModel]:
-  return {label: linear_model.LinearRegression().fit(
-    df.get([explanatory_label]), df.get(label))
-      for label in objective_labels}
-
-
-def dump_wine(df: pd.DataFrame) -> None:
+def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   print(df.groupby('class').size())
   print(df.info())
   print(df.describe())
 
   explanatory_label = 'Alcohol'
   objective_labels = ['Malic acid', 'Ash', 'Total phenols', 'Color intensity']
-  models = create_models(df, explanatory_label, objective_labels)
+  X = df.get([explanatory_label])
 
-  for label in models.keys():
-    model = models.get(label)
-    X = df.get([explanatory_label])
-    Y = df.get(label)
+  areas = set_layout()
 
-    a1, a2, a3 = set_layout()
+  for n, label in enumerate(objective_labels):
+    y = df.get(label)
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+    model = linear_model.LinearRegression().fit(X_train, y_train)
+    y_predict = model.predict(X_test)
+
+    # Pearson correlation coefficient
+    # https://blog.amedama.jp/entry/2015/09/28/213745
+    # (相関係数, 有意確率)
+    # 相関係数は 1 に近いほど強い相関があることを指す
+    # 有意確率 P 値は 0 に近いほどデータが偶然そうなった可能性が低いと言える
+    r, p = sp.stats.pearsonr(X.get('Alcohol'), y)
+
+    score = model.score(X_test, y_test)
+    r2_score = metrics.r2_score(y_test, y_predict)
+
+    desc = f'ccoef, p: {r:.3f}, {p:.3f}\n'
+    desc += f'coef: {model.coef_[0]:.3f}\n'
+    desc += f'intercept: {model.intercept_:.3f}\n'
+    desc += f'score: {score:.3f}\n'
+    desc += f'r2_score: {r2_score:.3f}'
+    print(label)
+    print(desc)
 
     sns.scatterplot(
       x=explanatory_label,
       y=label,
       hue='class',
       data=df,
-      ax=a1
+      ax=areas[n]
     )
 
-    predicted_Y = model.predict(df.get(['Alcohol']))
-    score = model.score(X, Y)
-    a1.plot(X, predicted_Y)
-    a1.text(
-      X.min(),
-      predicted_Y.min(),
-      f'coef: {model.coef_[0]:.2f}\nintercept: {model.intercept_:.2f}\nscore: {score:.2f}',
-      bbox=dict(facecolor='white', alpha=0.5))
+    areas[n].plot(X_test, y_predict)
+    areas[n].text(X_test.min(), y_predict.min(), desc, bbox=dict(facecolor='white', alpha=0.5))
 
-    a2.set_xlabel('Alcohol')
-    a2.hist(df.get('Alcohol'))
-    a3.set_xlabel('Color intensity')
-    a3.hist(df.get('Color intensity'))
+    areas[n].set_xlabel('Alcohol')
+    areas[n].set_ylabel(label)
 
+  if save_to_file:
+    plt.savefig('wine.png')
+  else:
     plt.show()
 
 
 if __name__ == '__main__':
   df = wine()
-  dump_wine(df)
+  dump_wine(df, True)
