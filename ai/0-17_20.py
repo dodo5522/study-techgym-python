@@ -98,8 +98,8 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   print(df.info())
   print(df.describe())
 
-  explanatory_label = 'Alcohol'
-  objective_labels = ['', 'Ash', 'Total phenols', 'Color intensity']
+  explanatory_label = 'Flavanoids'
+  objective_labels = ['', 'Total phenols', 'class', 'OD280/OD315 of diluted wines']
   X = df.get([explanatory_label])
 
   areas = set_layout()
@@ -124,7 +124,7 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     # (相関係数, 有意確率)
     # 相関係数は 1 に近いほど強い相関があることを指す
     # 有意確率 P 値は 0 に近いほどデータが偶然そうなった可能性が低いと言える
-    r, p = sp.stats.pearsonr(X.get('Alcohol'), y)
+    r, p = sp.stats.pearsonr(X.get(explanatory_label), y)
     rs.append(r)
 
     score = model.score(X_test, y_test)
@@ -150,7 +150,7 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     areas[n].plot(X_test, y_predict)
     #areas[n].text(X_test.min(), y_predict.min(), desc, bbox=dict(facecolor='white', alpha=0.5))
 
-    areas[n].set_xlabel('Alcohol')
+    areas[n].set_xlabel(explanatory_label)
     areas[n].set_ylabel(label)
 
   m = max(rs)
