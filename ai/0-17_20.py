@@ -155,7 +155,18 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
 
   m = max(rs)
   m_label = objective_labels[rs.index(m)]
+  print('')
   print(f'Max corelation coefficient with {explanatory_label}: {m_label}')
+
+  # Show ranking of corr
+  sorted_corr = df.corr().abs().unstack().sort_values(ascending=False)
+  dropped_dup_corr = sorted_corr[sorted_corr.index.map(lambda i: i[0] != i[1])]
+  print('')
+  print(dropped_dup_corr)
+
+  # Show ranking of corr top 10 (5)
+  print('')
+  print(dropped_dup_corr[:10])
 
   if save_to_file:
     plt.savefig('wine.png')
