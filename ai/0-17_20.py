@@ -102,6 +102,7 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
 
   areas = set_layout()
 
+  rs = []
   for n, label in enumerate(objective_labels):
     y = df.get(label)
     X_train, X_test, y_train, y_test = train_test_split(X, y)
@@ -115,6 +116,7 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     # 相関係数は 1 に近いほど強い相関があることを指す
     # 有意確率 P 値は 0 に近いほどデータが偶然そうなった可能性が低いと言える
     r, p = sp.stats.pearsonr(X.get('Alcohol'), y)
+    rs.append(r)
 
     score = model.score(X_test, y_test)
     r2_score = metrics.r2_score(y_test, y_predict)
@@ -140,6 +142,10 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
 
     areas[n].set_xlabel('Alcohol')
     areas[n].set_ylabel(label)
+
+  m = max(rs)
+  m_label = objective_labels[rs.index(m)]
+  print(f'Max corelation coefficient with {explanatory_label}: {m_label}')
 
   if save_to_file:
     plt.savefig('wine.png')
