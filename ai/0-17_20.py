@@ -48,23 +48,25 @@ def get_dataframe(url: str, header: bool) -> pd.DataFrame:
 
 def set_layout() -> List[plt.Axes]:
   """
-  |---|---|
-  | 1 | 2 |
-  |---|---|
-  | 3 | 4 |
-  |---|---|
+  |---|---|---|---|---|---|
+  |   |           |   | 2 |
+  |---|     1     |---|---|
+  |   |           |   | 3 |
+  |---|---|---|---|---|---|
+  |   |   |   |   |   | 4 |
+  |---|---|---|---|---|---|
   """
-  figsize=(6.4, 6.4)  # width, height
+  figsize=(9.6, 4.8)  # width, height
   f = plt.figure(figsize=figsize, dpi=200)
-  gs = GridSpec(nrows=2, ncols=2, height_ratios=[1, 1])
+  gs = GridSpec(nrows=3, ncols=6, height_ratios=[1, 1, 1])
 
-  gs13 = GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs[0:2, 0])
-  area1 = f.add_subplot(gs13[0, :])
-  area3 = f.add_subplot(gs13[1, :])
+  gs1 = GridSpecFromSubplotSpec(nrows=3, ncols=3, subplot_spec=gs[0:2, 1:4])
+  area1 = f.add_subplot(gs1[:, :])
 
-  gs24 = GridSpecFromSubplotSpec(nrows=2, ncols=1, subplot_spec=gs[0:2, 1])
-  area2 = f.add_subplot(gs24[0, :])
-  area4 = f.add_subplot(gs24[1, :])
+  gs234 = GridSpecFromSubplotSpec(nrows=3, ncols=1, subplot_spec=gs[0:3, 5])
+  area2 = f.add_subplot(gs234[0, :])
+  area3 = f.add_subplot(gs234[1, :])
+  area4 = f.add_subplot(gs234[2, :])
 
   return area1, area2, area3, area4
 
@@ -96,13 +98,21 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   print(df.info())
   print(df.describe())
 
-  explanatory_label = 'Alcohol'
-  objective_labels = ['Malic acid', 'Ash', 'Total phenols', 'Color intensity']
+  explanatory_label = 'Flavanoids'
+  objective_labels = ['', 'Total phenols', 'class', 'OD280/OD315 of diluted wines']
   X = df.get([explanatory_label])
 
   areas = set_layout()
+  sns.heatmap(
+    ax=areas[0],
+    data=df.corr()
+  )
 
+  rs = []
   for n, label in enumerate(objective_labels):
+    if len(label) == 0:
+      continue
+
     y = df.get(label)
     X_train, X_test, y_train, y_test = train_test_split(X, y)
 
@@ -114,7 +124,8 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     # (相関係数, 有意確率)
     # 相関係数は 1 に近いほど強い相関があることを指す
     # 有意確率 P 値は 0 に近いほどデータが偶然そうなった可能性が低いと言える
-    r, p = sp.stats.pearsonr(X.get('Alcohol'), y)
+    r, p = sp.stats.pearsonr(X.get(explanatory_label), y)
+    rs.append(r)
 
     score = model.score(X_test, y_test)
     r2_score = metrics.r2_score(y_test, y_predict)
@@ -132,14 +143,30 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
       y=label,
       hue='class',
       data=df,
-      ax=areas[n]
+      ax=areas[n],
+      legend=False
     )
 
     areas[n].plot(X_test, y_predict)
-    areas[n].text(X_test.min(), y_predict.min(), desc, bbox=dict(facecolor='white', alpha=0.5))
+    #areas[n].text(X_test.min(), y_predict.min(), desc, bbox=dict(facecolor='white', alpha=0.5))
 
-    areas[n].set_xlabel('Alcohol')
+    areas[n].set_xlabel(explanatory_label)
     areas[n].set_ylabel(label)
+
+  m = max(rs)
+  m_label = objective_labels[rs.index(m)]
+  print('')
+  print(f'Max corelation coefficient with {explanatory_label}: {m_label}')
+
+  # Show ranking of corr
+  sorted_corr = df.corr().abs().unstack().sort_values(ascending=False)
+  dropped_dup_corr = sorted_corr[sorted_corr.index.map(lambda i: i[0] != i[1])]
+  print('')
+  print(dropped_dup_corr)
+
+  # Show ranking of corr top 10 (5)
+  print('')
+  print(dropped_dup_corr[:10])
 
   if save_to_file:
     plt.savefig('wine.png')
