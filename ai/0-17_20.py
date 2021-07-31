@@ -48,27 +48,33 @@ def get_dataframe(url: str, header: bool) -> pd.DataFrame:
 
 def set_layout() -> List[plt.Axes]:
   """
-  |---|---|---|---|---|---|
-  |   |           |   | 2 |
-  |---|     1     |---|---|
-  |   |           |   | 3 |
-  |---|---|---|---|---|---|
-  |   |   |   |   |   | 4 |
-  |---|---|---|---|---|---|
+  |---|---|---|---|---|---|---|
+  |   |           |   | 2 | 5 |
+  |---|     1     |---|---|---|
+  |   |           |   | 3 | 6 |
+  |---|---|---|---|---|---|---|
+  |   |   |   |   |   | 4 | 7 |
+  |---|---|---|---|---|---|---|
   """
-  figsize=(9.6, 4.8)  # width, height
+  areas = []
+  figsize=(11.2, 4.8)  # width, height
   f = plt.figure(figsize=figsize, dpi=200)
-  gs = GridSpec(nrows=3, ncols=6, height_ratios=[1, 1, 1])
+  gs = GridSpec(nrows=3, ncols=7, height_ratios=[1, 1, 1])
 
   gs1 = GridSpecFromSubplotSpec(nrows=3, ncols=3, subplot_spec=gs[0:2, 1:4])
-  area1 = f.add_subplot(gs1[:, :])
+  areas.append(f.add_subplot(gs1[:, :]))
 
   gs234 = GridSpecFromSubplotSpec(nrows=3, ncols=1, subplot_spec=gs[0:3, 5])
-  area2 = f.add_subplot(gs234[0, :])
-  area3 = f.add_subplot(gs234[1, :])
-  area4 = f.add_subplot(gs234[2, :])
+  areas.append(f.add_subplot(gs234[0, :]))
+  areas.append(f.add_subplot(gs234[1, :]))
+  areas.append(f.add_subplot(gs234[2, :]))
 
-  return area1, area2, area3, area4
+  gs567 = GridSpecFromSubplotSpec(nrows=3, ncols=1, subplot_spec=gs[0:3, 6])
+  areas.append(f.add_subplot(gs567[0, :]))
+  areas.append(f.add_subplot(gs567[1, :]))
+  areas.append(f.add_subplot(gs567[2, :]))
+
+  return areas
 
 
 def wine() -> pd.DataFrame:
@@ -98,8 +104,8 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   print(df.info())
   print(df.describe())
 
-  explanatory_label = 'Flavanoids'
-  objective_labels = ['', 'Total phenols', 'class', 'OD280/OD315 of diluted wines']
+  explanatory_label = 'Alcohol'
+  objective_labels = ['', 'Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
   X = df.get([explanatory_label])
 
   areas = set_layout()
@@ -166,7 +172,8 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
 
   # Show ranking of corr top 10 (5)
   print('')
-  print(dropped_dup_corr[:10])
+  print('coefs Alcohol')
+  print(dropped_dup_corr['Alcohol'])
 
   if save_to_file:
     plt.savefig('wine.png')
