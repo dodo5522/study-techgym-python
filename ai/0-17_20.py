@@ -48,27 +48,33 @@ def get_dataframe(url: str, header: bool) -> pd.DataFrame:
 
 def set_layout() -> List[plt.Axes]:
   """
-  |---|---|---|---|---|---|
-  |   |           |   | 2 |
-  |---|     1     |---|---|
-  |   |           |   | 3 |
-  |---|---|---|---|---|---|
-  |   |   |   |   |   | 4 |
-  |---|---|---|---|---|---|
+  |---|---|---|---|---|---|---|
+  |   |           |   | 2 | 5 |
+  |---|     1     |---|---|---|
+  |   |           |   | 3 | 6 |
+  |---|---|---|---|---|---|---|
+  |   |   |   |   |   | 4 | 7 |
+  |---|---|---|---|---|---|---|
   """
-  figsize=(9.6, 4.8)  # width, height
+  areas = []
+  figsize=(11.2, 4.8)  # width, height
   f = plt.figure(figsize=figsize, dpi=200)
-  gs = GridSpec(nrows=3, ncols=6, height_ratios=[1, 1, 1])
+  gs = GridSpec(nrows=3, ncols=7, height_ratios=[1, 1, 1])
 
   gs1 = GridSpecFromSubplotSpec(nrows=3, ncols=3, subplot_spec=gs[0:2, 1:4])
-  area1 = f.add_subplot(gs1[:, :])
+  areas.append(f.add_subplot(gs1[:, :]))
 
   gs234 = GridSpecFromSubplotSpec(nrows=3, ncols=1, subplot_spec=gs[0:3, 5])
-  area2 = f.add_subplot(gs234[0, :])
-  area3 = f.add_subplot(gs234[1, :])
-  area4 = f.add_subplot(gs234[2, :])
+  areas.append(f.add_subplot(gs234[0, :]))
+  areas.append(f.add_subplot(gs234[1, :]))
+  areas.append(f.add_subplot(gs234[2, :]))
 
-  return area1, area2, area3, area4
+  gs567 = GridSpecFromSubplotSpec(nrows=3, ncols=1, subplot_spec=gs[0:3, 6])
+  areas.append(f.add_subplot(gs567[0, :]))
+  areas.append(f.add_subplot(gs567[1, :]))
+  areas.append(f.add_subplot(gs567[2, :]))
+
+  return areas
 
 
 def wine() -> pd.DataFrame:
@@ -98,8 +104,8 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   print(df.info())
   print(df.describe())
 
-  explanatory_label = 'Flavanoids'
-  objective_labels = ['', 'Total phenols', 'class', 'OD280/OD315 of diluted wines']
+  explanatory_label = 'Alcohol'
+  objective_labels = ['', 'Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
   X = df.get([explanatory_label])
 
   areas = set_layout()
@@ -130,13 +136,11 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     score = model.score(X_test, y_test)
     r2_score = metrics.r2_score(y_test, y_predict)
 
-    desc = f'ccoef, p: {r:.3f}, {p:.3f}\n'
-    desc += f'coef: {model.coef_[0]:.3f}\n'
+    desc = f'coef: {model.coef_[0]:.3f}\n'
     desc += f'intercept: {model.intercept_:.3f}\n'
     desc += f'score: {score:.3f}\n'
-    desc += f'r2_score: {r2_score:.3f}'
     print(label)
-    print(desc)
+    print(desc + f'r2_score: {r2_score:.3f}' + f'pearsonr: {r:.3f}, {p:.3f}')
 
     sns.scatterplot(
       x=explanatory_label,
@@ -148,7 +152,7 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     )
 
     areas[n].plot(X_test, y_predict)
-    #areas[n].text(X_test.min(), y_predict.min(), desc, bbox=dict(facecolor='white', alpha=0.5))
+    areas[n].text(X_test.min(), y_predict.max(), desc + f'pearsonr: {r:.3f}', bbox=dict(facecolor='white', alpha=0.5), fontsize=6)
 
     areas[n].set_xlabel(explanatory_label)
     areas[n].set_ylabel(label)
@@ -166,7 +170,8 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
 
   # Show ranking of corr top 10 (5)
   print('')
-  print(dropped_dup_corr[:10])
+  print('coefs Alcohol')
+  print(dropped_dup_corr['Alcohol'])
 
   if save_to_file:
     plt.savefig('wine.png')
@@ -174,6 +179,37 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     plt.show()
 
 
+def multiple_reg_wine(df: pd.DataFrame, explanatory_labels: List[str], objective_label: str, label: str) -> None:
+  X = df.get(explanatory_labels)
+  y = df.get(objective_label)
+
+  X_train, X_test, y_train, y_test, = train_test_split(X, y, test_size=0.5, random_state=0)
+  model = linear_model.LinearRegression().fit(X_train, y_train)
+
+  score_train = model.score(X_train, y_train)
+  score_test = model.score(X_test, y_test)
+  coefs = pd.Series(model.coef_, index=X.columns)
+
+  print('---')
+  print(label)
+  print(f'score(train): {score_train:.3f}')
+  print(f'score(test) : {score_test:.3f}')
+  print(f'intercept   : {model.intercept_:.3f}')
+  print(coefs)
+
+
+def multiple_reg_wine_including_alcalinity(df: pd.DataFrame) -> None:
+  objective_label = ['Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
+  multiple_reg_wine(df, objective_label, 'Alcohol', 'wine_multi_with_alcalinity')
+
+
+def multiple_reg_wine_excluding_alcalinity(df: pd.DataFrame) -> None:
+  objective_label = ['Proline', 'Color intensity', 'Total phenols', 'Magnesium', 'Flavanoids']
+  multiple_reg_wine(df, objective_label, 'Alcohol', 'wine_multi')
+
+
 if __name__ == '__main__':
   df = wine()
   dump_wine(df, True)
+  multiple_reg_wine_including_alcalinity(df)
+  multiple_reg_wine_excluding_alcalinity(df)
