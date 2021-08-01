@@ -196,13 +196,18 @@ def multiple_reg_wine(df: pd.DataFrame, explanatory_labels: List[str], objective
 
 
 def multiple_reg_wine_including_alcalinity(df: pd.DataFrame) -> None:
-  objective_label = ['Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
-  multiple_reg_wine(df, objective_label, 'Alcohol', 'wine_multi_with_alcalinity')
+  explanatory_labels = ['Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
+  multiple_reg_wine(df, explanatory_labels, 'Alcohol', 'wine_multi_with_alcalinity')
 
 
 def multiple_reg_wine_excluding_alcalinity(df: pd.DataFrame) -> None:
-  objective_label = ['Proline', 'Color intensity', 'Total phenols', 'Magnesium', 'Flavanoids']
-  multiple_reg_wine(df, objective_label, 'Alcohol', 'wine_multi')
+  explanatory_labels = ['Proline', 'Color intensity', 'Total phenols', 'Magnesium', 'Flavanoids']
+  multiple_reg_wine(df, explanatory_labels, 'Alcohol', 'wine_multi')
+
+
+def multiple_reg_wine_all(df: pd.DataFrame) -> None:
+  explanatory_labels = df.columns.drop(['Alcohol'])
+  multiple_reg_wine(df, explanatory_labels, 'Alcohol', 'wine_all')
 
 
 if __name__ == '__main__':
@@ -210,3 +215,4 @@ if __name__ == '__main__':
   dump_wine(df, True)
   multiple_reg_wine_including_alcalinity(df)
   multiple_reg_wine_excluding_alcalinity(df)
+  multiple_reg_wine_all(df)
