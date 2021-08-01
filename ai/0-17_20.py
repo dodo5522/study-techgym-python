@@ -136,13 +136,11 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     score = model.score(X_test, y_test)
     r2_score = metrics.r2_score(y_test, y_predict)
 
-    desc = f'ccoef, p: {r:.3f}, {p:.3f}\n'
-    desc += f'coef: {model.coef_[0]:.3f}\n'
+    desc = f'coef: {model.coef_[0]:.3f}\n'
     desc += f'intercept: {model.intercept_:.3f}\n'
     desc += f'score: {score:.3f}\n'
-    desc += f'r2_score: {r2_score:.3f}'
     print(label)
-    print(desc)
+    print(desc + f'r2_score: {r2_score:.3f}' + f'pearsonr: {r:.3f}, {p:.3f}')
 
     sns.scatterplot(
       x=explanatory_label,
@@ -154,7 +152,7 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     )
 
     areas[n].plot(X_test, y_predict)
-    #areas[n].text(X_test.min(), y_predict.min(), desc, bbox=dict(facecolor='white', alpha=0.5))
+    areas[n].text(X_test.min(), y_predict.max(), desc + f'pearsonr: {r:.3f}', bbox=dict(facecolor='white', alpha=0.5), fontsize=6)
 
     areas[n].set_xlabel(explanatory_label)
     areas[n].set_ylabel(label)
@@ -181,6 +179,37 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     plt.show()
 
 
+def multiple_reg_wine(df: pd.DataFrame, explanatory_labels: List[str], objective_label: str, label: str) -> None:
+  X = df.get(explanatory_labels)
+  y = df.get(objective_label)
+
+  X_train, X_test, y_train, y_test, = train_test_split(X, y, test_size=0.5, random_state=0)
+  model = linear_model.LinearRegression().fit(X_train, y_train)
+
+  score_train = model.score(X_train, y_train)
+  score_test = model.score(X_test, y_test)
+  coefs = pd.Series(model.coef_, index=X.columns)
+
+  print('---')
+  print(label)
+  print(f'score(train): {score_train:.3f}')
+  print(f'score(test) : {score_test:.3f}')
+  print(f'intercept   : {model.intercept_:.3f}')
+  print(coefs)
+
+
+def multiple_reg_wine_including_alcalinity(df: pd.DataFrame) -> None:
+  objective_label = ['Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
+  multiple_reg_wine(df, objective_label, 'Alcohol', 'wine_multi_with_alcalinity')
+
+
+def multiple_reg_wine_excluding_alcalinity(df: pd.DataFrame) -> None:
+  objective_label = ['Proline', 'Color intensity', 'Total phenols', 'Magnesium', 'Flavanoids']
+  multiple_reg_wine(df, objective_label, 'Alcohol', 'wine_multi')
+
+
 if __name__ == '__main__':
   df = wine()
   dump_wine(df, True)
+  multiple_reg_wine_including_alcalinity(df)
+  multiple_reg_wine_excluding_alcalinity(df)
