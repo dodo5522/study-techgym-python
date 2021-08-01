@@ -104,9 +104,9 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   print(df.info())
   print(df.describe())
 
-  explanatory_label = 'Alcohol'
-  objective_labels = ['', 'Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
-  X = df.get([explanatory_label])
+  objective_label = 'Alcohol'
+  explanatory_labels = ['', 'Proline', 'Color intensity', 'Alcalinity of ash', 'Total phenols', 'Magnesium', 'Flavanoids']
+  y = df.get(objective_label)
 
   areas = set_layout()
   sns.heatmap(
@@ -115,12 +115,12 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
   )
 
   rs = []
-  for n, label in enumerate(objective_labels):
-    if len(label) == 0:
+  for n, explanatory_label in enumerate(explanatory_labels):
+    if len(explanatory_label) == 0:
       continue
 
-    y = df.get(label)
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X = df.get([explanatory_label])
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= 0.5, random_state=0)
 
     model = linear_model.LinearRegression().fit(X_train, y_train)
     y_predict = model.predict(X_test)
@@ -139,12 +139,12 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     desc = f'coef: {model.coef_[0]:.3f}\n'
     desc += f'intercept: {model.intercept_:.3f}\n'
     desc += f'score: {score:.3f}\n'
-    print(label)
+    print(explanatory_label)
     print(desc + f'r2_score: {r2_score:.3f}' + f'pearsonr: {r:.3f}, {p:.3f}')
 
     sns.scatterplot(
       x=explanatory_label,
-      y=label,
+      y=objective_label,
       hue='class',
       data=df,
       ax=areas[n],
@@ -152,13 +152,10 @@ def dump_wine(df: pd.DataFrame, save_to_file: bool) -> None:
     )
 
     areas[n].plot(X_test, y_predict)
-    areas[n].text(X_test.min(), y_predict.max(), desc + f'pearsonr: {r:.3f}', bbox=dict(facecolor='white', alpha=0.5), fontsize=6)
-
-    areas[n].set_xlabel(explanatory_label)
-    areas[n].set_ylabel(label)
+    areas[n].text(X_test.min(), y_predict.min(), explanatory_label + '\n' + desc + f'pearsonr: {r:.3f}', bbox=dict(facecolor='white', alpha=0.5), fontsize=6)
 
   m = max(rs)
-  m_label = objective_labels[rs.index(m)]
+  m_label = explanatory_labels[rs.index(m)]
   print('')
   print(f'Max corelation coefficient with {explanatory_label}: {m_label}')
 
