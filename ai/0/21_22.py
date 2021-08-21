@@ -8,8 +8,8 @@ import sys
 from typing import List
 
 
-CSV_TRAIN = 'dataset/house-prices-advanced-regression-techniques/train.csv'
-CSV_TEST = 'dataset/house-prices-advanced-regression-techniques/test.csv'
+CSV_TRAIN = '../dataset/house-prices-advanced-regression-techniques/train.csv'
+CSV_TEST = '../dataset/house-prices-advanced-regression-techniques/test.csv'
 
 
 def get_dataframe(path: str, header = 0) -> pd.DataFrame:
