@@ -47,7 +47,7 @@ if __name__ == '__main__':
   print(data.head(5))
 
   data = data.get(columns)
-  model = KMeans(n_clusters=6, init='random', random_state=0).fit(data)
+  model = KMeans(n_clusters=6, init='k-means++', random_state=0).fit(data)
   labels = pd.Series(model.labels_, name='class')
   data['class'] = labels
 
