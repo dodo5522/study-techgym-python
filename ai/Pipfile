@@ -12,6 +12,8 @@ matplotlib = "*"
 requests = "*"
 seaborn = "*"
 sklearn = "*"
+gensim = "*"
+janome = "*"
 
 [dev-packages]
 
