@@ -20,7 +20,7 @@ labels = [
   'mean concave points',
 ]
 
-fig = plt.figure(figsize=(9, 3), dpi=300)
+fig = plt.figure(figsize=(18, 6), dpi=200)
 gs = fig.add_gridspec(nrows=1, ncols=3)
 
 for i, azim in enumerate(range(5, 30, 10)):
